@@ -1,40 +1,44 @@
-# Hybrid template for the CMS
+# create-profound-next
 
+Scaffold a Next.js + Profound CMS starter app.
 
-## Getting Started
+## Usage
 
-Create a Hybrid project by name
-```
-git clone https://github.com/eng-manager-xyz/hybrid-cms-template.git
-cd hybrid-cms-template/
-
-bun run src/index.ts <name-of-project>
-cd <name-of-project>
+```bash
+bunx create-profound-next <project-name>
 ```
 
-## Project Structure
-
-```
-src/
-  app/
-    layout.tsx      # Root layout
-    page.tsx        # Home page
-  components/
-    Hello.tsx       # Example component
-  lib/
-    client.ts       # Typed fetch client
-  middleware.ts     # CMS proxy
-scripts/
-  generate-schemas.ts   # 
+```bash
+cd <project-name>
+bun install
 ```
 
-## Scripts
+## Environment Variables
 
-Sync schemas: `bun generate-schemas`
+Create a `.env.local` file:
 
-| Command       | Description              |
-| ------------- | ------------------------ |
-| `bun dev`     | Start development server |
-| `bun build`   | Production build         |
-| `bun start`   | Run production server    |
-| `bun lint`    | Lint with ESLint         |
+```env
+PROFOUND_API_KEY=your_api_key
+NEXT_PUBLIC_PROFOUND_WEBSITE_ID=your_website_id
+NEXT_PUBLIC_PROFOUND_CMS_URL=https://cms.dev.tryprofound.com
+```
+
+## Commands
+
+| Command                  | Description                        |
+| ------------------------ | ---------------------------------- |
+| `bun dev`                | Start development server           |
+| `bun build`              | Production build                   |
+| `bun start`              | Run production server              |
+| `bun lint`               | Lint with ESLint                   |
+| `bun generate-schemas`   | Sync Zod schemas from the CMS      |
+
+### generate-schemas
+
+Fetches your custom content schemas from Profound CMS and writes them to `generated/cms-schemas.ts`:
+
+```bash
+bun generate-schemas
+```
+
+Requires `NEXT_PUBLIC_PROFOUND_CMS_URL` and `NEXT_PUBLIC_PROFOUND_WEBSITE_ID` to be set. Re-run whenever you update your content models in the CMS.
