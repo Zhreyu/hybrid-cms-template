@@ -115,7 +115,7 @@ function generatePackageJson(name: string) {
       start: "next start",
       lint: "next lint",
       "generate-schemas":
-        "tsx --tsconfig tsconfig.json scripts/generate-schemas.ts",
+        "bun scripts/generate-schemas.ts",
     },
     dependencies: {
       next: "^14.2.0",

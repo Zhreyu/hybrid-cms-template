@@ -1,4 +1,4 @@
-import { ParametricRoutePage } from "cms-renderer";
+import ParametricRoutePage from "cms-renderer/lib/renderer";
 
 // Registry maps CMS component types to your React components.
 // Add entries here as you build out your component library.
