@@ -118,9 +118,9 @@ function generatePackageJson(name: string) {
         "bun scripts/generate-schemas.ts",
     },
     dependencies: {
-      next: "^14.2.0",
-      react: "^18.3.0",
-      "react-dom": "^18.3.0",
+      next: "^16.1.1",
+      react: "^19",
+      "react-dom": "^19",
       "cms-renderer": "latest",
       zod: "^4.0.0",
     },
