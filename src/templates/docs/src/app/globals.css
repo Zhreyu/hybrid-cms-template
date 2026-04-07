@@ -21,7 +21,7 @@ main {
   margin-right: auto;
 }
 
-main > nav {
+main>nav {
   grid-column: 1 / -1;
   width: 100vw;
   margin-left: calc(50% - 50vw);
@@ -30,7 +30,7 @@ main > nav {
   z-index: 50;
 }
 
-main > aside {
+main>aside {
   position: static;
   height: auto;
   min-width: 0;
@@ -38,14 +38,14 @@ main > aside {
   border-bottom: 1px solid #1f1f1f;
 }
 
-main > footer {
+main>footer {
   grid-column: 1;
   min-width: 0;
   width: 100%;
   justify-self: stretch;
 }
 
-main > div {
+main>div {
   min-width: 0;
 }
 
@@ -55,7 +55,7 @@ main > div {
     column-gap: 32px;
   }
 
-  main > aside {
+  main>aside {
     position: sticky;
     top: var(--docs-nav-height);
     height: calc(100svh - var(--docs-nav-height));
@@ -63,7 +63,7 @@ main > div {
     border-bottom: 0;
   }
 
-  main > footer {
+  main>footer {
     grid-column: 2;
     justify-self: start;
   }

@@ -68,10 +68,10 @@ export default async function UISidebar({
   const country = extractCountry(routeParams);
   const currentPath = routeParams?.post
     ? buildDocsHref({
-        language,
-        category: routeParams.category.value,
-        post: routeParams.post.value,
-      })
+      language,
+      category: routeParams.category.value,
+      post: routeParams.post.value,
+    })
     : country
       ? `/${country}`
       : undefined;

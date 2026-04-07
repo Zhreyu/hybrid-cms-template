@@ -112,33 +112,33 @@ export function ClickableImage({
       {/* Portal avoids nesting the modal inside markdown-generated paragraphs. */}
       {open && mounted
         ? createPortal(
-            <div className="fixed inset-0 z-[90] p-4">
-              <button
-                type="button"
-                aria-label="Close image preview"
-                className="absolute inset-0 bg-black/80"
-                onClick={() => setOpen(false)}
+          <div className="fixed inset-0 z-[90] p-4">
+            <button
+              type="button"
+              aria-label="Close image preview"
+              className="absolute inset-0 bg-black/80"
+              onClick={() => setOpen(false)}
+            />
+            <div className="pointer-events-none relative flex h-full max-h-full max-w-full items-center justify-center">
+              <Image
+                src={src}
+                alt={alt}
+                width={resolvedDimensions.width}
+                height={resolvedDimensions.height}
+                unoptimized
+                sizes="100vw"
+                style={{
+                  width: 'auto',
+                  height: 'auto',
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                }}
+                className="pointer-events-auto rounded-xl shadow-2xl"
               />
-              <div className="pointer-events-none relative flex h-full max-h-full max-w-full items-center justify-center">
-                <Image
-                  src={src}
-                  alt={alt}
-                  width={resolvedDimensions.width}
-                  height={resolvedDimensions.height}
-                  unoptimized
-                  sizes="100vw"
-                  style={{
-                    width: 'auto',
-                    height: 'auto',
-                    maxWidth: '100%',
-                    maxHeight: '100%',
-                  }}
-                  className="pointer-events-auto rounded-xl shadow-2xl"
-                />
-              </div>
-            </div>,
-            document.body
-          )
+            </div>
+          </div>,
+          document.body
+        )
         : null}
     </>
   );
