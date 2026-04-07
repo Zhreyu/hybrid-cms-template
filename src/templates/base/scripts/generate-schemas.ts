@@ -6,7 +6,7 @@ async function main() {
 
   if (!cmsUrl) {
     throw new Error(
-      '[generate-schemas] NEXT_PUBLIC_PROFOUND_CMS_URL is not set. Set it in your environment or .env file.'
+      '[generate-schemas] NEXT_PUBLIC_CMS_API_URL is not set. Set it in your environment or .env file.'
     );
   }
   if (!websiteId) {
