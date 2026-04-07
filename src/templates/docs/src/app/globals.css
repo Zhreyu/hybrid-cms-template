@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+body {
+  margin: 0;
+  background-color: #0d0d0d;
+  overflow-x: hidden;
+}
+
+:root {
+  --docs-nav-height: 56px;
+}
+
+/* The CMS renderer mounts blocks inside one <main>, so layout is assigned here. */
+main {
+  display: grid;
+  grid-template-columns: 1fr;
+  width: 100%;
+  min-height: 100vh;
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+main > nav {
+  grid-column: 1 / -1;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+main > aside {
+  position: static;
+  height: auto;
+  min-width: 0;
+  overflow: visible;
+  border-bottom: 1px solid #1f1f1f;
+}
+
+main > footer {
+  grid-column: 1;
+  min-width: 0;
+  width: 100%;
+  justify-self: stretch;
+}
+
+main > div {
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  main {
+    grid-template-columns: 260px minmax(0, 1fr);
+    column-gap: 32px;
+  }
+
+  main > aside {
+    position: sticky;
+    top: var(--docs-nav-height);
+    height: calc(100svh - var(--docs-nav-height));
+    overflow-y: auto;
+    border-bottom: 0;
+  }
+
+  main > footer {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
