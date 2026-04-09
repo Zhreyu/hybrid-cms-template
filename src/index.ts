@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import pc from "picocolors";
 import { existsSync, mkdirSync } from "fs";
-import { createInterface } from "readline/promises";
+import { createInterface, emitKeypressEvents } from "readline";
 import { stdin as input, stdout as output } from "process";
 import { join, resolve, dirname, basename } from "path";
 import { fileURLToPath } from "url";
@@ -12,13 +12,13 @@ const __dirname = dirname(__filename);
 
 const templates = {
   base: {
-    label: "Base template",
-    description: "Minimal Next.js starter for Profound CMS.",
+    label: "Base",
+    description: "Starter CMS template",
     dir: join(__dirname, "templates", "base"),
   },
   docs: {
-    label: "Docs template",
-    description: "Documentation site starter with docs-specific UI.",
+    label: "Docs",
+    description: "Full documentation site",
     dir: join(__dirname, "templates", "docs"),
   },
 } as const;
@@ -27,6 +27,7 @@ type TemplateName = keyof typeof templates;
 
 const args = process.argv.slice(2);
 const noGit = args.includes("--no-git");
+const noInstall = args.includes("--no-install");
 const templateArg = args.find((arg) => arg.startsWith("--template="));
 const requestedTemplate = templateArg?.split("=")[1] as TemplateName | undefined;
 const projectName =
@@ -35,12 +36,9 @@ const projectName =
 async function main() {
   const templateName = await resolveTemplateName(requestedTemplate);
   const template = templates[templateName];
+  let dependenciesInstalled = false;
 
-  console.log();
-  console.log(`  ${pc.bold("create-profound-next")}`);
-  console.log();
-  console.log(`  Scaffolding ${pc.cyan(projectName)}…`);
-  console.log(`  Template: ${pc.cyan(templateName)} (${template.label})`);
+  console.log(`  Creating ${pc.cyan(projectName)} from ${pc.cyan(template.label)}…`);
   console.log();
 
   const targetDir = resolve(process.cwd(), projectName);
@@ -52,7 +50,22 @@ async function main() {
   }
 
   await copyTemplate(template.dir, targetDir, packageName);
-  console.log(`  ${pc.green("✓")}  Template copied`);
+  console.log(`  ${pc.green("✓")}  Template scaffolded`);
+
+  if (!noInstall) {
+    process.stdout.write(`  ${pc.dim("•")}  Installing dependencies...`);
+
+    try {
+      execSync("bun install", { cwd: targetDir, stdio: "ignore" });
+      process.stdout.write("\r\x1B[2K");
+      console.log(`  ${pc.green("✓")}  Dependencies installed`);
+      dependenciesInstalled = true;
+    } catch {
+      process.stdout.write("\r\x1B[2K");
+      console.log(`  ${pc.yellow("!")}  Dependency install failed`);
+      console.log(`  ${pc.dim(`   Run "cd ${projectName} && bun install" to finish setup.`)}`);
+    }
+  }
 
   if (!noGit) {
     try {
@@ -68,12 +81,18 @@ async function main() {
     }
   }
 
+  console.log(`  ${pc.green("✓")}  Ready to run locally`);
   console.log();
-  console.log(`  ${pc.bold(pc.green("Done!"))} Your app is ready.\n`);
-  console.log(`  ${pc.dim("Next steps:")}\n`);
-  console.log(`    ${pc.cyan("cd")} ${projectName}`);
-  console.log(`    ${pc.cyan("bun install")}`);
-  console.log(`    ${pc.cyan("bun dev")}`);
+  console.log(`  ${pc.bold(pc.green("Done."))}`);
+  console.log();
+  console.log(`  ${pc.dim("Next steps")}`);
+  console.log(`  ${pc.cyan("cd")} ${projectName}`);
+
+  if (!dependenciesInstalled) {
+    console.log(`  ${pc.cyan("bun install")}`);
+  }
+
+  console.log(`  ${pc.cyan("bun dev")}`);
   console.log();
 }
 
@@ -98,38 +117,103 @@ async function resolveTemplateName(
     return "base";
   }
 
-  console.log(`  Select a template:\n`);
+  return selectTemplate();
+}
+
+async function selectTemplate(): Promise<TemplateName> {
   const templateNames = Object.keys(templates) as TemplateName[];
+  let selectedIndex = 0;
+  let renderedLineCount = 0;
 
-  templateNames.forEach((name, index) => {
-    const template = templates[name];
-    console.log(
-      `    ${pc.cyan(String(index + 1))}. ${template.label} ${pc.dim(`(${name})`)}`
-    );
-    console.log(`       ${pc.dim(template.description)}`);
+  return new Promise<TemplateName>((resolve) => {
+    const rl = createInterface({ input, output });
+    emitKeypressEvents(input, rl);
+
+    const previousRawMode = "isRaw" in input ? input.isRaw : false;
+    if (typeof input.setRawMode === "function") {
+      input.setRawMode(true);
+    }
+
+    const cleanup = () => {
+      input.off("keypress", onKeypress);
+      if (typeof input.setRawMode === "function") {
+        input.setRawMode(previousRawMode);
+      }
+      rl.close();
+    };
+
+    const finish = (value: TemplateName) => {
+      cleanup();
+      process.stdout.write("\x1B[?25h");
+      process.stdout.write("\n");
+      resolve(value);
+    };
+
+    const render = () => {
+      if (renderedLineCount > 0) {
+        for (let index = 0; index < renderedLineCount; index += 1) {
+          process.stdout.write("\x1B[1A\x1B[2K");
+        }
+      }
+
+      const ruleWidth = Math.max(28, (output.columns ?? 80) - 4);
+      const divider = pc.dim("─".repeat(ruleWidth));
+
+      const lines = [
+        "",
+        `  ${pc.green("?")} ${pc.bold("Which template do you want to start from?")}`,
+        "",
+      ];
+
+      templateNames.forEach((name, index) => {
+        const template = templates[name];
+        const isSelected = index === selectedIndex;
+        const pointer = isSelected ? pc.green("›") : " ";
+        const label = isSelected
+          ? pc.white(pc.bold(template.label))
+          : pc.dim(template.label);
+        lines.push(`  ${pointer} ${label} ${pc.dim(template.description)}`);
+      });
+
+      lines.push("");
+      lines.push(`  ${divider}`);
+      lines.push("");
+      lines.push(`  ${pc.dim("Use ↑ ↓ to move, Enter to select.")}`);
+
+      process.stdout.write(lines.join("\n") + "\n");
+      renderedLineCount = lines.length;
+    };
+
+    const onKeypress = (_: string, key: { name?: string; ctrl?: boolean }) => {
+      if (key.ctrl && key.name === "c") {
+        cleanup();
+        process.stdout.write("\x1B[?25h");
+        process.stdout.write("\n");
+        process.exit(1);
+      }
+
+      if (key.name === "up") {
+        selectedIndex =
+          (selectedIndex - 1 + templateNames.length) % templateNames.length;
+        render();
+        return;
+      }
+
+      if (key.name === "down") {
+        selectedIndex = (selectedIndex + 1) % templateNames.length;
+        render();
+        return;
+      }
+
+      if (key.name === "return") {
+        finish(templateNames[selectedIndex]);
+      }
+    };
+
+    process.stdout.write("\x1B[?25l");
+    input.on("keypress", onKeypress);
+    render();
   });
-  console.log();
-
-  const rl = createInterface({ input, output });
-
-  try {
-    const answer = (
-      await rl.question(`  Template ${pc.dim("(default: 1)")} `)
-    ).trim();
-
-    if (!answer || answer === "1" || answer.toLowerCase() === "base") {
-      return "base";
-    }
-
-    if (answer === "2" || answer.toLowerCase() === "docs") {
-      return "docs";
-    }
-  } finally {
-    rl.close();
-  }
-
-  console.error(pc.red(`  ✗  Invalid template selection.`));
-  process.exit(1);
 }
 
 const renderedTextExtensions = new Set([

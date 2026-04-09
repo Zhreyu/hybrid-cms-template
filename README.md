@@ -17,7 +17,13 @@ bunx create-profound-next <project-name> --template=docs
 
 ```bash
 cd <project-name>
-bun install
+bun dev
+```
+
+Skip dependency installation during scaffolding if needed:
+
+```bash
+bunx create-profound-next <project-name> --no-install
 ```
 
 ## Environment Variables
