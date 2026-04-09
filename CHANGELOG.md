@@ -70,8 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial README documentation.
 - A base template `.env.example`.
 
-[Unreleased]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/eaf39b9...HEAD
-[0.1.5]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/c1c80fc...eaf39b9
+[0.1.5]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/c1c80fc...HEAD
 [0.1.4]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/d1643f9...c1c80fc
 [0.1.3]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/3d9c6d4...d1643f9
 [0.1.2]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/75cad88...3d9c6d4
