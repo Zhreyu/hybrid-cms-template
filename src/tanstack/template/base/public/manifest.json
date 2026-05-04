@@ -1,6 +1,6 @@
 {
-  "short_name": "TanStack App",
-  "name": "Create TanStack App Sample",
+  "short_name": "{{PROJECT_NAME}}",
+  "name": "{{PROJECT_NAME}}",
   "icons": [
     {
       "src": "favicon.ico",
