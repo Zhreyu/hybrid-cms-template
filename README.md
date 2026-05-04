@@ -8,7 +8,7 @@ Scaffold a **Next.js** or **TanStack Start** app with Profound CMS (`cms-rendere
 bunx create-profound-app <project-name>
 ```
 
-**Interactive (TTY):** you will be prompted to choose a **framework** (step 2) and a **template** (step 3).  
+**Interactive (TTY):** you will be prompted to choose a **framework** and a **template**.  
 **Non-interactive (CI):** defaults to Next.js + Base unless you pass flags (see below).
 
 ```bash
@@ -17,7 +17,7 @@ bunx create-profound-app <project-name> --framework=tanstack --template=base
 bunx create-profound-app <project-name> --framework=tanstack --template=docs
 ```
 
-Shortcuts (skip the framework step — same CLI entry):
+Shortcuts (skip the framework prompt — same CLI entry):
 
 ```bash
 bunx create-profound-next <project-name>
@@ -35,7 +35,7 @@ bun dev
 bunx create-profound-app <project-name> --no-install
 ```
 
-## Environment variables
+## Environment Variables
 
 Create a `.env` or `.env.local` (see each template’s `.env.example`):
 
@@ -46,7 +46,7 @@ NEXT_PUBLIC_CMS_API_URL=https://cms.dev.tryprofound.com
 NEXT_PUBLIC_BUNNY_CDN_URL="https://cms-profound.b-cdn.net"
 ```
 
-## TanStack templates
+## TanStack Templates
 
 - **Base** and **Docs** include a CMS catch-all route powered by `cms-renderer`’s parametric routing helper (`cms-renderer/lib/parametric-route`).
 
