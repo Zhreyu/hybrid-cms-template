@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.6] - 2026-05-04
+
+### Added
+
+- Package **`create-profound-app`** with bins `create-profound-app`, **`create-profound-next`** (Next.js shortcut, skips framework prompt), and **`create-profound-tanstack`** (TanStack shortcut).
+- **TanStack Start** base template under `src/tanstack/template/base` and **docs** template under `src/tanstack/template/docs` (Profound splat route via `cms-renderer/lib/parametric-route`).
+- Interactive **framework** picker and **template** picker; `--framework=next|tanstack` and `--template=...` for CI.
+
+### Changed
+
+- Next.js templates moved to `src/nextjs/template/{base,docs}`.
+
+### Documentation
+
+- README updated for the new commands and TanStack templates.
+
 ## [0.1.5] - 2026-04-09
 
 ### Added
@@ -70,7 +86,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial README documentation.
 - A base template `.env.example`.
 
-[0.1.5]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/c1c80fc...HEAD
+[0.1.6]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/bc74c63...HEAD
+[0.1.5]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/c1c80fc...bc74c63
 [0.1.4]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/d1643f9...c1c80fc
 [0.1.3]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/3d9c6d4...d1643f9
 [0.1.2]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/75cad88...3d9c6d4

@@ -1,0 +1,40 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# testing
+coverage/
+
+# vite / TanStack Start
+dist/
+dist-ssr/
+.output/
+.tanstack/
+.vinxi/
+.nitro/
+.wrangler/
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# local env files
+.env
+.env*.local
+!.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+
+# generated (schemas — re-create with `bun run generate-schemas`)
+/generated
