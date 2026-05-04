@@ -48,12 +48,7 @@ NEXT_PUBLIC_BUNNY_CDN_URL="https://cms-profound.b-cdn.net"
 
 ## TanStack templates
 
-- **Base** and **Docs** use `cms-renderer/lib/parametric-route`. That subpath exists in the **CMS monorepo** `apps/renderer` build (package version **0.6.7** there) but is **not** in the latest release on npm yet (**0.6.6**). Templates depend on **`cms-renderer` ^0.6.6** so `bun install` always resolves from the registry.
-- **End-to-end testing before you publish 0.6.7:** install dependencies in the app, then link your local renderer over `node_modules/cms-renderer`:
-  1. In the CMS repo: `cd apps/renderer && bun install && bun run build && bun link`
-  2. In the scaffolded app: `bun link cms-renderer` (after `bun install` in that app)
-- After **cms-renderer@0.6.7** is on npm, a normal `bun install` is enough; you can drop the link.
-- The full **TanStack + Profound** walkthrough will live on the **Profound CMS** docs site when that page is published.
+- **Base** and **Docs** include a CMS catch-all route powered by `cms-renderer`’s parametric routing helper (`cms-renderer/lib/parametric-route`).
 
 ## Commands (generated app)
 

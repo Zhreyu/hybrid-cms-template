@@ -29,7 +29,7 @@ bun run build
 
 ## Notes
 
-- **CMS catch-all:** `src/routes/$.tsx` uses `cms-renderer/lib/parametric-route`. On npm, use **`bun link cms-renderer`** to a local `apps/renderer` build until **cms-renderer@0.6.7** is published (see the create-profound-app README).
+- **CMS catch-all:** `src/routes/$.tsx` uses `cms-renderer/lib/parametric-route`.
 - **Live refresh:** `DocsRefresher` subscribes to CMS content changes and calls `router.invalidate()` (no Next `revalidatePath`).
 - **Search index:** built at request time (no `next/cache`); consider adding your own cache layer for very large sites.
 - **Proxy:** the Next template’s `proxy.ts` is not ported; configure your host or Vite dev proxy if you need `/admin` or `/api` passthrough to the CMS origin.
