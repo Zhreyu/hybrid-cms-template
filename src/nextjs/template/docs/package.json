@@ -1,0 +1,33 @@
+{
+  "name": "{{PROJECT_NAME}}",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run generate-schemas && dotenv -e .env.local -- next dev --turbopack -p 3005",
+    "start": "next start -p 3002",
+    "lint": "bunx biome check .",
+    "generate-schemas": "dotenv -e .env.local -- bun scripts/generate-schemas.ts",
+    "build": "bun run generate-schemas && dotenv -e .env.local -- next build",
+    "check-types": "tsc --noEmit",
+    "clean": "rm -rf .turbo .next node_modules"
+  },
+  "dependencies": {
+    "@heroicons/react": "^2.2.0",
+    "cms-renderer": "latest",
+    "md4w": "^0.2.7",
+    "next": "16.2.2",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.2",
+    "@types/node": "^25.5.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "dotenv-cli": "^11.0.0",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^6.0.2"
+  }
+}

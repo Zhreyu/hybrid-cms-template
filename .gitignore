@@ -1,1 +1,49 @@
-test-app
+# Local CLI scratch output (see package.json `dev` script)
+test-app/
+
+# Dependencies
+node_modules/
+
+# CLI package build output (`bun run build` → dist/)
+dist/
+
+# Environment (secrets)
+.env
+.env.*.local
+!.env.example
+
+# Logs & OS
+*.log
+.DS_Store
+
+# Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Coverage / caches
+coverage/
+*.tsbuildinfo
+
+# Create TanStack App probe metadata (must not ship in templates)
+src/**/template/**/.cta.json
+
+# Template sources — never commit Vite/TanStack/Next dev output under `src/*/template/`
+src/tanstack/template/**/dist/
+src/tanstack/template/**/dist-ssr/
+src/tanstack/template/**/.output/
+src/tanstack/template/**/.tanstack/
+src/tanstack/template/**/.vinxi/
+src/tanstack/template/**/.nitro/
+src/tanstack/template/**/.wrangler/
+src/nextjs/template/**/.next/
+src/nextjs/template/**/out/
+
+# Root-level scratch/example apps (if tracked)
+my-app/.next/
+my-app/dist/
+my-app/node_modules/
+my-app-2/.next/
+my-app-2/dist/
+my-app-2/node_modules/

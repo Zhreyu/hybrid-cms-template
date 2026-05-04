@@ -1,9 +1,11 @@
 {
-  "name": "create-profound-next",
-  "version": "0.1.5",
+  "name": "create-profound-app",
+  "version": "0.2.0",
   "private": false,
   "type": "module",
   "bin": {
+    "create-profound-app": "src/index.ts",
+    "create-profound-tanstack": "src/index.ts",
     "create-profound-next": "src/index.ts"
   },
   "scripts": {
