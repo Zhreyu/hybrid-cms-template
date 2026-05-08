@@ -1,6 +1,7 @@
 # Docs template (TanStack Start)
 
 Hostable documentation site on **TanStack Start** + published `cms-renderer`, mirroring the Next.js docs template under `src/nextjs/template/docs`.
+This template includes Nitro so it can deploy to Vercel using the current TanStack Start integration.
 
 ## Install
 
@@ -26,6 +27,8 @@ bun run dev
 bun run generate-schemas
 bun run build
 ```
+
+`bun run build` now runs through Vite with Nitro enabled, which produces the deployment output Vercel expects.
 
 ## Notes
 

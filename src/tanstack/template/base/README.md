@@ -1,6 +1,7 @@
 # {{PROJECT_NAME}}
 
 Bootstrapped with [`create-profound-app`](https://github.com/tryprofound/hybrid-cms-template) (TanStack Start + Profound CMS).
+This template includes Nitro so it can deploy cleanly to Vercel's TanStack Start runtime.
 
 ## Setup
 
@@ -23,8 +24,18 @@ Register custom block components in the empty `registry` in `src/routes/$.tsx` a
 | Command               | Description                          |
 | --------------------- | ------------------------------------ |
 | `bun dev`             | Dev server (port 3000)               |
-| `bun build`           | Production build                     |
+| `bun build`           | Production build via Vite + Nitro    |
 | `bun preview`         | Preview production build             |
 | `bun generate-schemas`| Sync Zod schemas from the CMS      |
 
 For deeper docs and guides, see the Profound CMS documentation.
+
+## Deploying to Vercel
+
+No extra Vercel config should be required. Import the project in Vercel and use the default build command:
+
+```bash
+bun run build
+```
+
+Nitro will produce the deployment output Vercel expects for TanStack Start.
