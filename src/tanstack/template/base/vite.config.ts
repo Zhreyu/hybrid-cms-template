@@ -1,5 +1,6 @@
 import tailwindcss from '@tailwindcss/vite';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
+import { nitro } from 'nitro/vite';
 import { defineConfig, loadEnv } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 
@@ -18,5 +19,5 @@ function publicEnvDefine(mode: string): Record<string, string> {
 export default defineConfig(({ mode }) => ({
   resolve: { tsconfigPaths: true },
   define: publicEnvDefine(mode),
-  plugins: [tailwindcss(), tanstackStart(), viteReact()],
+  plugins: [tailwindcss(), tanstackStart(), nitro(), viteReact()],
 }));

@@ -23,6 +23,7 @@
     "@tanstack/router-plugin": "^1.132.0",
     "@trpc/client": "^11.8.1",
     "cms-renderer": "^0.6.6",
+    "nitro": "3.0.260429-beta",
     "superjson": "^2.2.6",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
