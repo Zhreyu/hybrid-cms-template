@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { revalidatePath } from "next/cache";
 import { Refresher } from "cms-renderer/lib/refresher";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "{{PROJECT_NAME}}",
