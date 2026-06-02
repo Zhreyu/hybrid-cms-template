@@ -19,14 +19,15 @@ function MobileSidebarButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center justify-between rounded-md border border-[#1f1f1f] bg-[#121212] px-4 py-3 text-sm font-medium text-[#f3f4f6]"
+      className="flex w-full items-center justify-between rounded-md border border-[var(--border)] bg-[var(--surface-muted)] px-4 py-3 text-sm font-medium text-[var(--text)]"
       aria-label="Open docs navigation"
+      title="Open docs navigation"
     >
       <span className="flex items-center gap-3">
-        <Bars3Icon aria-hidden={true} className="size-4 text-[#9ca3af]" />
+        <Bars3Icon aria-hidden={true} className="size-4 text-[var(--text-muted)]" />
         <span>Docs</span>
       </span>
-      <ChevronRightIcon aria-hidden={true} className="size-4 text-[#6b7280]" />
+      <ChevronRightIcon aria-hidden={true} className="size-4 text-[var(--text-muted)]" />
     </button>
   );
 }
@@ -44,7 +45,7 @@ function SidebarSectionList({
     <>
       {sections.map((section) => (
         <div key={section.title} className="mb-6">
-          <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-[#9ca3af]">
+          <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
             {section.title}
           </p>
           {section.links.map((item) => (
@@ -56,8 +57,8 @@ function SidebarSectionList({
                 'flex items-center justify-between rounded-md px-2 text-sm no-underline transition-colors',
                 linkPaddingClassName,
                 item.active
-                  ? 'bg-[#1a2e1a] text-[#4ade80] font-medium'
-                  : 'text-[#d1d5db] hover:text-white hover:bg-[#1a1a1a]',
+                  ? 'bg-[var(--accent-soft)] text-[var(--accent)] font-medium'
+                  : 'text-[var(--text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--text)]',
               ].join(' ')}
             >
               <span>{item.label}</span>
@@ -103,18 +104,18 @@ function MobileSidebarDrawer({
       <button
         type="button"
         aria-label="Close docs navigation"
-        className="absolute inset-0 bg-black/70"
+        className="absolute inset-0 bg-[var(--overlay)]"
         onClick={onClose}
       />
-      <div className="relative ml-auto flex h-full w-full max-w-sm flex-col border-l border-[#1f1f1f] bg-[#0d0d0d]">
-        <div className="flex items-center justify-between border-b border-[#1f1f1f] px-4 py-4">
-          <div className="text-sm font-semibold uppercase tracking-[0.18em] text-[#9ca3af]">
+      <div className="relative ml-auto flex h-full w-full max-w-sm flex-col border-l border-[var(--border)] bg-[var(--surface)]">
+        <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-4">
+          <div className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
             Docs
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-2 text-[#9ca3af] transition-colors hover:bg-[#161616] hover:text-white"
+            className="rounded-md p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-muted)] hover:text-[var(--text)]"
             aria-label="Close docs navigation"
           >
             <XMarkIcon aria-hidden={true} className="size-4" />

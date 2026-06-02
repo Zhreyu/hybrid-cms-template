@@ -1,7 +1,14 @@
 import { unstable_cache } from 'next/cache';
-import { getCategories, getPost, type Post } from './cms-data';
+import { cache } from 'react';
+import {
+  getCategories,
+  getCategoryRefs,
+  getCategoryTitleField,
+  getPostsByIds,
+  resolveRef,
+} from './cms-data';
+import { getDisplayTitle, getLocalizedDisplayTitle } from './display-title';
 import { buildDocsHref } from './docs-href';
-import { normalizeTitle } from './normalize-title';
 import { getRouteSegment } from './route-segment';
 
 export interface SearchEntry {
@@ -33,7 +40,10 @@ function stripMarkdown(markdown: string): string {
     .trim();
 }
 
-function resolvePostContent(post: Post | null, fallback: unknown): string {
+function resolvePostContent(
+  post: { content: unknown; [key: string]: unknown } | null,
+  fallback: unknown
+): string {
   if (post && typeof post.content === 'string') return post.content;
   if (typeof fallback === 'string') return fallback;
   return '';
@@ -45,50 +55,63 @@ const getCachedSearchEntries = unstable_cache(
       getCategories(),
       getCategories(language),
     ]);
-
-    const entries = await Promise.all(
-      sourceCategories.flatMap((sourceCategory, categoryIndex) => {
-        const translatedCategory = translatedCategories[categoryIndex] ?? sourceCategory;
-        const categoryLabel =
-          typeof translatedCategory.category_name === 'string'
-            ? translatedCategory.category_name
-            : typeof sourceCategory.category_name === 'string'
-              ? sourceCategory.category_name
-              : 'Docs';
-        const categorySlug = getRouteSegment(sourceCategory, 'category_name');
-
-        return (sourceCategory.post_list ?? []).map(async (ref) => {
-          const id = (ref as { _ref: string })._ref;
-          const [sourcePost, translatedPost] = await Promise.all([
-            getPost(id),
-            getPost(id, language),
-          ]);
-          if (!sourcePost) return null;
-
-          const postSlug = getRouteSegment(sourcePost as Record<string, unknown>, 'title');
-          const localizedPost = translatedPost ?? sourcePost;
-          const title =
-            typeof localizedPost.title === 'string' ? localizedPost.title : sourcePost.title;
-          const normalizedTitle = normalizeTitle(title);
-          const markdown = resolvePostContent(localizedPost, sourcePost.content);
-          const headings = extractHeadings(markdown);
-          const content = stripMarkdown(markdown);
-          return {
-            href: buildDocsHref({
-              language,
-              category: categorySlug,
-              post: postSlug,
-            }),
-            title: normalizedTitle,
-            category: categoryLabel,
-            content,
-            headings,
-          } satisfies SearchEntry;
-        });
-      })
+    const translatedById = new Map(
+      translatedCategories.map((category) => [String(category._id), category])
     );
 
-    return entries.filter((entry): entry is SearchEntry => entry !== null);
+    const allPostIds: string[] = [];
+    for (const category of sourceCategories) {
+      for (const ref of getCategoryRefs(category)) {
+        allPostIds.push(ref._ref);
+      }
+    }
+
+    const [sourcePostsMap, translatedPostsMap] = await Promise.all([
+      getPostsByIds(allPostIds),
+      getPostsByIds(allPostIds, language),
+    ]);
+
+    const entries: SearchEntry[] = [];
+
+    for (let categoryIndex = 0; categoryIndex < sourceCategories.length; categoryIndex++) {
+      const sourceCategory = sourceCategories[categoryIndex];
+      if (!sourceCategory) continue;
+
+      const translatedCategory = translatedById.get(String(sourceCategory._id)) ?? sourceCategory;
+      const categoryTitleField = getCategoryTitleField(sourceCategory);
+      const categoryLabel = language
+        ? getLocalizedDisplayTitle(sourceCategory, translatedCategory, categoryTitleField)
+        : getDisplayTitle(sourceCategory, categoryTitleField);
+      const categorySlug = getRouteSegment(sourceCategory, categoryTitleField);
+
+      for (const ref of getCategoryRefs(sourceCategory)) {
+        const sourcePost = resolveRef(ref, sourcePostsMap);
+        if (!sourcePost) continue;
+
+        const translatedPost = resolveRef(ref, translatedPostsMap);
+        const postSlug = getRouteSegment(sourcePost, 'title');
+        const localizedPost = translatedPost ?? sourcePost;
+        const title = translatedPost
+          ? getLocalizedDisplayTitle(
+              sourcePost as Record<string, unknown>,
+              translatedPost as Record<string, unknown>
+            )
+          : getDisplayTitle(sourcePost as Record<string, unknown>);
+        const markdown = resolvePostContent(localizedPost, sourcePost.content);
+        const headings = extractHeadings(markdown);
+        const content = stripMarkdown(markdown);
+
+        entries.push({
+          href: buildDocsHref({ language, category: categorySlug, post: postSlug }),
+          title,
+          category: categoryLabel,
+          content,
+          headings,
+        });
+      }
+    }
+
+    return entries;
   },
   ['search-entries'],
   {
@@ -96,6 +119,6 @@ const getCachedSearchEntries = unstable_cache(
   }
 );
 
-export function getSearchEntries(language?: string): Promise<SearchEntry[]> {
+export const getSearchEntries = cache((language?: string): Promise<SearchEntry[]> => {
   return getCachedSearchEntries(language);
-}
+});

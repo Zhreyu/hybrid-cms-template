@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Avoid `transpilePackages: ['cms-renderer']` with Turbopack — it re-bundles `dist/`
-  // and breaks `serverExternalPackages` for `md4w`. cms-renderer ships compiled ESM.
+  transpilePackages: ['cms-renderer'],
+  // md4w resolves its WASM asset relative to its installed package path on the server.
   serverExternalPackages: ['md4w'],
   images: {
     remotePatterns: [
@@ -10,19 +10,6 @@ const nextConfig = {
         hostname: 'cms-profound.b-cdn.net',
       },
     ],
-  },
-  async headers() {
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          {
-            key: 'Content-Security-Policy',
-            value: "frame-ancestors 'self' https://*.tryprofound.com https://*.vercel.app",
-          },
-        ],
-      },
-    ];
   },
 };
 

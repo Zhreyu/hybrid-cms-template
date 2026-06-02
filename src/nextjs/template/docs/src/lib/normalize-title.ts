@@ -3,5 +3,6 @@ export function normalizeTitle(value: string): string {
     .replace(/[-_]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+    .toLocaleLowerCase()
+    .replace(/(^|[\s'’(])\p{L}/gu, (char) => char.toLocaleUpperCase());
 }

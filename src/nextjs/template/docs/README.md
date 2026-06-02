@@ -21,7 +21,7 @@ bun install
 Copy `.env.example` to `.env.local` and set:
 
 ```env
-NEXT_PUBLIC_BUNNY_CDN_URL="https://cms-profound.b-cdn.net"
+NEXT_PUBLIC_BUNNY_CDN_URL=https://cms-profound.b-cdn.net
 NEXT_PUBLIC_CMS_API_URL=https://cms.dev.tryprofound.com
 NEXT_PUBLIC_PROFOUND_WEBSITE_ID=your-website-id
 PROFOUND_API_KEY=your-api-key
@@ -39,4 +39,5 @@ bun run build
 
 - The published dependency boundary is `cms-renderer`.
 - Docs-specific markdown rendering is implemented locally with `md4w`, so the starter does not depend on unpublished `cms-renderer` internals.
-- The homepage language list is local to this app so the template no longer imports directly from monorepo schema sources.
+- Visiting `/` redirects into the default docs entry (`/{lang}/{category}/{post}`), honoring a `docs_language` cookie when set.
+- Language selection lives in the navbar `LanguageDropdown` beside the framework picker; both persist choices via cookie and `localStorage`.

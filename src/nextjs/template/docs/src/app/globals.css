@@ -1,13 +1,60 @@
 @import "tailwindcss";
 
-body {
-  margin: 0;
-  background-color: #0d0d0d;
-  overflow-x: hidden;
-}
-
 :root {
   --docs-nav-height: 56px;
+
+  --background: #ffffff;
+  --surface: #ffffff;
+  --surface-muted: #f8fafc;
+  --surface-strong: #f3f4f6;
+  --text: #111827;
+  --text-muted: #6b7280;
+  --text-soft: #9ca3af;
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+  --accent: #16a34a;
+  --accent-soft: #dcfce7;
+  --accent-foreground: #14532d;
+  --danger: #dc2626;
+  --danger-soft: #fee2e2;
+  --overlay: rgb(15 23 42 / 0.12);
+  --shadow-color: rgb(15 23 42 / 0.08);
+  --code-bg: #f3f4f6;
+  --code-border: #d1d5db;
+  --code-fg: #111827;
+  --table-header: #f8fafc;
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --background: #0d0d0d;
+  --surface: #101010;
+  --surface-muted: #141414;
+  --surface-strong: #171717;
+  --text: #f3f4f6;
+  --text-muted: #9ca3af;
+  --text-soft: #6b7280;
+  --border: #1f1f1f;
+  --border-strong: #2a2a2a;
+  --accent: #4ade80;
+  --accent-soft: #1a2e1a;
+  --accent-foreground: #bbf7d0;
+  --danger: #fca5a5;
+  --danger-soft: #3b1212;
+  --overlay: rgb(0 0 0 / 0.7);
+  --shadow-color: rgb(0 0 0 / 0.35);
+  --code-bg: #111827;
+  --code-border: #1f2937;
+  --code-fg: #f9fafb;
+  --table-header: #111827;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background-color: var(--background);
+  color: var(--text);
+  overflow-x: hidden;
 }
 
 /* The CMS renderer mounts blocks inside one <main>, so layout is assigned here. */
@@ -35,7 +82,7 @@ main>aside {
   height: auto;
   min-width: 0;
   overflow: visible;
-  border-bottom: 1px solid #1f1f1f;
+  border-bottom: 1px solid var(--border);
 }
 
 main>footer {
@@ -67,4 +114,13 @@ main>div {
     grid-column: 2;
     justify-self: start;
   }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+.cms-docs-markdown h2,
+.cms-docs-markdown h3 {
+  scroll-margin-top: calc(var(--docs-nav-height) + 1.5rem);
 }
