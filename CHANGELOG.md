@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-06-02
+
+### Added
+
+- Tailwind CSS v4 support to the base scaffold template.
+- Edge-level Vercel iframe embedding headers for the Next.js base and docs templates.
+
+### Changed
+
+- Refactored the Next.js docs template to match the production docs experience, including theme support, framework selection, copy controls, a table of contents, improved navigation, and richer CMS preview handling.
+
+### Fixed
+
+- Allowed scaffolded Next.js apps to be embedded from configured CMS domains.
+
 ## [0.1.7] - 2026-05-08
 
 ### Added
@@ -96,7 +111,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial README documentation.
 - A base template `.env.example`.
 
-[0.1.7]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/4bde1ad...HEAD
+[0.2.0]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/6620db3...HEAD
+[0.1.7]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/4bde1ad...6620db3
 [0.1.6]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/bc74c63...4bde1ad
 [0.1.5]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/c1c80fc...bc74c63
 [0.1.4]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/d1643f9...c1c80fc
