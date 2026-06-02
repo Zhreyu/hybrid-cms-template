@@ -9,8 +9,6 @@ export async function DocsMarkdown({ content }: { content: string }) {
       alt: string;
       title?: string;
       loading?: 'eager' | 'lazy';
-    }) => (
-      <ClickableImage {...props} />
-    ),
+    }) => <ClickableImage {...props} />,
   });
 }

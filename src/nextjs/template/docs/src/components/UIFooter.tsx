@@ -1,18 +1,19 @@
 import type { BlockComponentProps } from 'cms-renderer/lib/types';
 import Image from 'next/image';
 import type { Uifooter } from '@/generated/cms-schemas';
+import { buildAssetUrl } from '@/lib/asset-url';
 import { GithubIcon, LinkedInIcon, XIcon } from './icons';
 
 export default async function UIFooter({ content }: BlockComponentProps<Uifooter>) {
-  const { powered_by, poweredby_url, x_url, github_url, linkedin_url } = content;
+  const { powered_by, poweredby_url, x_url, github_url, linkedin_url, status_page_url } = content;
 
   const poweredByAsset = powered_by as
     | { _asset?: { url?: string; mime_type?: string }; alt?: string }
     | undefined;
   const logoAlt = powered_by?.alt;
-  const mimeType = poweredByAsset?._asset?.mime_type;
-  const ext = mimeType ? `.${mimeType.split('/')[1]}` : '';
-  const logoUrl = poweredByAsset?._asset?.url ? `${poweredByAsset._asset.url}${ext}` : undefined;
+  const logoUrl = buildAssetUrl(poweredByAsset?._asset?.url, {
+    mimeType: poweredByAsset?._asset?.mime_type,
+  });
 
   const socialLinks = [
     { href: x_url, icon: <XIcon />, label: 'X' },
@@ -21,34 +22,51 @@ export default async function UIFooter({ content }: BlockComponentProps<Uifooter
   ].filter((l) => l.href);
 
   return (
-    <footer className="border-t border-[#1f1f1f] bg-[#0d0d0d] px-4 pt-6 pb-16 font-sans sm:px-6 lg:px-12">
+    <footer className="border-t border-[var(--border)] bg-[var(--background)] text-[var(--text)] px-4 pt-6 pb-16 font-sans sm:px-6 lg:px-12">
       <div className="mx-auto flex w-full max-w-[48rem] flex-col gap-6 sm:flex-row sm:items-center sm:justify-between lg:mx-0 lg:pl-4">
-        {socialLinks.length > 0 && (
-          <div className="flex items-center gap-5">
-            {socialLinks.map(({ href, icon, label }) => (
-              <a
-                key={label}
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={label}
-                className="text-[#6b7280] transition-colors hover:text-[#d1d5db]"
-              >
-                {icon}
-              </a>
-            ))}
-          </div>
-        )}
+        <div className="flex items-center gap-5">
+          {socialLinks.map(({ href, icon, label }) => (
+            <a
+              key={label}
+              href={href}
+              title={`Visit our ${label} profile`}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={label}
+              className="text-[var(--text-muted)] transition-colors hover:text-[var(--text)]"
+            >
+              {icon}
+            </a>
+          ))}
+          {status_page_url && (
+            <a
+              href={status_page_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="View status page"
+              className="flex items-center gap-2 text-[11px] text-[var(--text-muted)] no-underline transition-colors hover:text-[var(--text)]"
+            >
+              <span aria-hidden="true" className="relative inline-flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              </span>
+              All Systems Operational
+            </a>
+          )}
+        </div>
         <a
           href={poweredby_url ?? '#'}
           target="_blank"
           rel="noopener noreferrer"
+          title="Visit our powered by profile"
           className="flex items-center gap-2 no-underline opacity-60 transition-opacity hover:opacity-100 sm:ml-auto"
         >
-          <span className="text-[11px] uppercase tracking-[0.18em] text-[#6b7280]">Powered By</span>
+          <span className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-soft)]">
+            Powered By
+          </span>
           {logoUrl ? (
             <Image
-              src={`https://cms-profound.b-cdn.net/uploads/${logoUrl}`}
+              src={logoUrl}
               alt={logoAlt ?? ''}
               width={95}
               height={20}
@@ -56,7 +74,7 @@ export default async function UIFooter({ content }: BlockComponentProps<Uifooter
               className="object-contain"
             />
           ) : (
-            <span className="text-[#4b5563] text-xs">{logoAlt}</span>
+            <span className="text-[var(--text-soft)] text-xs">{logoAlt}</span>
           )}
         </a>
       </div>

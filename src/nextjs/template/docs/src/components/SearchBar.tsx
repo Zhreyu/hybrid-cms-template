@@ -37,13 +37,13 @@ export function SearchBar({
   return (
     <div
       className={[
-        'flex h-8 w-full items-center gap-2 rounded-lg border border-[#2a2a2a] bg-[#141414] px-3 text-sm',
-        'transition-colors focus-within:border-[#3a3a3a]',
+        'flex h-8 w-full items-center gap-2 rounded-lg border border-[var(--border-strong)] bg-[var(--surface-muted)] px-3 text-sm',
+        'transition-colors focus-within:border-[var(--accent)]',
         'md:h-9 md:max-w-[480px]',
         className,
       ].join(' ')}
     >
-      <label htmlFor={inputId} className="flex shrink-0 text-[#6b7280]">
+      <label htmlFor={inputId} className="flex shrink-0 text-[var(--text-muted)]">
         <MagnifyingGlassIcon className="size-3.5 shrink-0" />
       </label>
       <input
@@ -57,10 +57,10 @@ export function SearchBar({
         onChange={(event) => onChange?.(event.target.value)}
         onFocus={() => onFocus?.()}
         onClick={() => onClick?.()}
-        className="min-w-0 flex-1 bg-transparent text-[13px] text-[#f3f4f6] outline-none placeholder:text-[#6b7280] md:text-sm"
+        className="min-w-0 flex-1 bg-transparent text-[13px] text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] md:text-sm"
       />
       {showShortcut ? (
-        <kbd className="hidden bg-transparent p-0 text-xs font-sans text-[#4b5563] md:block">
+        <kbd className="hidden bg-transparent p-0 text-xs font-sans text-[var(--text-soft)] md:block">
           ⌘K
         </kbd>
       ) : null}

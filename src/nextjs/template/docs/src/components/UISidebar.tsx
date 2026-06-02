@@ -1,53 +1,36 @@
 import type { BlockComponentProps, ResolvedRouteParams } from 'cms-renderer/lib/types';
-import type { Post } from '../lib/cms-data';
-import { getCategories, getPost } from '../lib/cms-data';
+import {
+  getCategories,
+  getCategoryRefs,
+  getCategoryTitleField,
+  getPostsByIds,
+  resolveRef,
+} from '../lib/cms-data';
+import { getDisplayTitle, getLocalizedDisplayTitle } from '../lib/display-title';
 import { buildDocsHref } from '../lib/docs-href';
 import { getRouteSegment } from '../lib/route-segment';
 import UISidebarClient from './UISidebarClient';
 
-function formatDisplayLabel(value: string): string {
-  const trimmed = value.trim();
-  if (!trimmed) return '';
+type ReferenceLike = {
+  _ref?: unknown;
+};
 
-  if (!trimmed.includes('-')) {
-    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+function extractSelectedCategoryIds(content: Record<string, unknown>): string[] {
+  const rawCategories = content.categories;
+  if (!Array.isArray(rawCategories)) {
+    return [];
   }
 
-  return trimmed
-    .split('-')
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
-}
+  return rawCategories
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object') {
+        return null;
+      }
 
-function getDisplayLabel(document: Record<string, unknown>, fallbackField: string): string {
-  const documentTitle = document._title;
-  if (typeof documentTitle === 'string' && documentTitle.length > 0) {
-    return documentTitle;
-  }
-
-  const fallbackValue = document[fallbackField];
-  if (typeof fallbackValue === 'string' && fallbackValue.length > 0) {
-    return fallbackValue;
-  }
-
-  return '';
-}
-
-function getLocalizedDisplayLabel(
-  sourceDocument: Record<string, unknown>,
-  translatedDocument: Record<string, unknown>,
-  fieldName: string,
-  language?: string
-): string {
-  if (language && language !== 'en') {
-    const translatedValue = translatedDocument[fieldName];
-    if (typeof translatedValue === 'string' && translatedValue.length > 0) {
-      return formatDisplayLabel(translatedValue);
-    }
-  }
-
-  return getDisplayLabel(sourceDocument, fieldName);
+      const ref = (entry as ReferenceLike)._ref;
+      return typeof ref === 'string' && ref.length > 0 ? ref : null;
+    })
+    .filter((id): id is string => id !== null);
 }
 
 function extractLanguage(routeParams?: ResolvedRouteParams): string | undefined {
@@ -61,87 +44,93 @@ function extractCountry(routeParams?: ResolvedRouteParams): string | undefined {
 }
 
 export default async function UISidebar({
+  content,
   routeParams,
   language: languageProp,
 }: BlockComponentProps<Record<string, unknown>>) {
   const language = languageProp ?? extractLanguage(routeParams);
+  const country = extractCountry(routeParams);
+  const selectedCategoryIds = extractSelectedCategoryIds(content);
+  const categoryParam = routeParams?.category;
+  const postParam = routeParams?.post;
+  const currentPath =
+    categoryParam && postParam
+      ? buildDocsHref({
+          language,
+          category: categoryParam.value,
+          post: postParam.value,
+        })
+      : country
+        ? `/${country}`
+        : undefined;
 
   const [sourceCategories, translatedCategories] = await Promise.all([
     getCategories(),
     getCategories(language),
   ]);
 
-  const country = extractCountry(routeParams);
+  const translatedById = new Map(
+    translatedCategories.map((category) => [String(category._id), category])
+  );
+  const sourceById = new Map(sourceCategories.map((category) => [String(category._id), category]));
 
-  let currentPath: string | undefined;
-  if (routeParams?.post?.value && routeParams?.category?.value) {
-    currentPath = buildDocsHref({
-      language,
-      category: routeParams.category.value,
-      post: routeParams.post.value,
-    });
-  } else if (routeParams?.post?.document?.id) {
-    const postId = routeParams.post.document.id;
-    for (const cat of sourceCategories) {
-      const postIds = (cat.post_list ?? []).map((r) => (r as { _ref: string })._ref);
-      if (!postIds.includes(postId)) continue;
-      const catSlug = getRouteSegment(cat as Record<string, unknown>, 'category_name');
-      const sourcePost = await getPost(postId);
-      if (!sourcePost) break;
-      const postSlug = getRouteSegment(sourcePost as Record<string, unknown>, 'title');
-      currentPath = buildDocsHref({ language, category: catSlug, post: postSlug });
-      break;
+  const visibleSourceCategories =
+    selectedCategoryIds.length > 0
+      ? selectedCategoryIds
+          .map((id) => sourceById.get(id))
+          .filter((category): category is NonNullable<typeof category> => category !== undefined)
+      : sourceCategories;
+
+  const allPostIds: string[] = [];
+  for (const category of visibleSourceCategories) {
+    for (const ref of getCategoryRefs(category)) {
+      allPostIds.push(ref._ref);
     }
-  } else if (country) {
-    currentPath = `/${country}`;
   }
 
-  const categoriesWithPosts = await Promise.all(
-    sourceCategories.map(async (sourceCategory, index) => {
-      const translatedCategory = translatedCategories[index] ?? sourceCategory;
+  const [sourcePostsMap, translatedPostsMap] = await Promise.all([
+    getPostsByIds(allPostIds),
+    getPostsByIds(allPostIds, language),
+  ]);
 
-      const posts = await Promise.all(
-        (sourceCategory.post_list ?? []).map(async (ref) => {
-          const id = (ref as { _ref: string })._ref;
-          const [sourcePost, translatedPost] = await Promise.all([
-            getPost(id),
-            getPost(id, language),
-          ]);
-          return {
-            sourcePost,
-            translatedPost: translatedPost ?? sourcePost,
-          };
-        })
-      );
+  const sections = visibleSourceCategories.map((sourceCategory) => {
+    const translatedCategory = translatedById.get(String(sourceCategory._id)) ?? sourceCategory;
+    const categoryTitleField = getCategoryTitleField(sourceCategory);
 
-      return {
-        sourceCategory,
-        translatedCategory,
-        posts: posts.filter(
-          (entry): entry is { sourcePost: Post; translatedPost: Post } => entry.sourcePost !== null
-        ),
-      };
-    })
-  );
+    const links = getCategoryRefs(sourceCategory)
+      .map((ref) => {
+        const sourcePost = resolveRef(ref, sourcePostsMap);
+        if (!sourcePost) return null;
 
-  const sections = categoriesWithPosts.map(({ sourceCategory, translatedCategory, posts }) => ({
-    title: getLocalizedDisplayLabel(sourceCategory, translatedCategory, 'category_name', language),
-    links: posts.map(({ sourcePost, translatedPost }) => {
-      const href = buildDocsHref({
-        language,
-        category: getRouteSegment(sourceCategory, 'category_name'),
-        post: getRouteSegment(sourcePost, 'title'),
-      });
-      return {
-        label: getLocalizedDisplayLabel(sourcePost, translatedPost, 'title', language),
-        href,
-        active: currentPath === href,
-      };
-    }),
-  }));
+        const translatedPost = resolveRef(ref, translatedPostsMap) ?? sourcePost;
+        const href = buildDocsHref({
+          language,
+          category: getRouteSegment(sourceCategory, categoryTitleField),
+          post: getRouteSegment(sourcePost, 'title'),
+        });
+
+        return {
+          label:
+            language && language !== 'en'
+              ? getLocalizedDisplayTitle(sourcePost, translatedPost)
+              : getDisplayTitle(sourcePost),
+          href,
+          active: currentPath === href,
+        };
+      })
+      .filter((link): link is NonNullable<typeof link> => link !== null);
+
+    return {
+      title:
+        language && language !== 'en'
+          ? getLocalizedDisplayTitle(sourceCategory, translatedCategory, categoryTitleField)
+          : getDisplayTitle(sourceCategory, categoryTitleField),
+      links,
+    };
+  });
 
   return (
-    <aside className="w-full bg-[#0d0d0d] font-sans lg:w-[260px]">
+    <aside className="w-full bg-[var(--background)] font-sans lg:w-[260px]">
       <UISidebarClient sections={sections} />
     </aside>
   );

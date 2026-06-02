@@ -1,13 +1,16 @@
 'use client';
 
-import { MoonIcon } from '@heroicons/react/16/solid';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import type { Header } from '@/generated/cms-schemas';
+import { buildAssetUrl } from '@/lib/asset-url';
 import type { SearchEntry } from '@/lib/search-index';
 import { buildSnippet, getSearchResults } from '@/lib/search-query';
+import { FrameworkDropdown } from './FrameworkDropdown';
+import { LanguageDropdown } from './LanguageDropdown';
 import { SearchBar } from './SearchBar';
+import { ThemeMenu } from './ThemeMenu';
 
 export interface NavLink {
   label: string;
@@ -29,26 +32,6 @@ function isTypingTarget(target: EventTarget | null): boolean {
     tagName === 'TEXTAREA' ||
     tagName === 'SELECT'
   );
-}
-
-function buildAssetUrl(url?: string, mimeType?: string): string | undefined {
-  if (!url) return undefined;
-
-  if (/^(https?:)?\/\//.test(url) || url.startsWith('data:') || url.startsWith('blob:')) {
-    return url;
-  }
-
-  const ext = mimeType ? `.${mimeType.split('/')[1]}` : '';
-  const urlWithExt = `${url}${/\.[a-z0-9]+$/i.test(url) ? '' : ext}`;
-  const normalizedPath = urlWithExt.replace(/^\/+/, '');
-  const path = urlWithExt.startsWith('/')
-    ? `/${normalizedPath}`
-    : urlWithExt.includes('/')
-      ? `/${normalizedPath}`
-      : `/uploads/${normalizedPath}`;
-
-  const cdnBase = process.env.NEXT_PUBLIC_BUNNY_CDN_URL?.trim().replace(/\/+$/, '');
-  return cdnBase ? `${cdnBase}${path}` : path;
 }
 
 function SearchModal({
@@ -145,12 +128,13 @@ function SearchModal({
     <div className="fixed inset-0 z-[80] px-4 py-4 sm:py-12">
       <button
         type="button"
+        title="Close search"
         aria-label="Close search"
-        className="absolute inset-0 bg-black/70"
+        className="absolute inset-0 bg-[var(--overlay)]"
         onClick={onClose}
       />
-      <div className="relative mx-auto flex max-h-[min(720px,100%)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-[#1f1f1f] bg-[#0d0d0d] shadow-2xl">
-        <div className="border-b border-[#1f1f1f] p-4">
+      <div className="relative mx-auto flex max-h-[min(720px,100%)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl">
+        <div className="border-b border-[var(--border)] p-4">
           <SearchBar
             placeholder="Search docs..."
             value={query}
@@ -165,7 +149,7 @@ function SearchModal({
 
         <div className="max-h-[70vh] overflow-y-auto p-2">
           {results.length === 0 ? (
-            <div className="px-3 py-10 text-center text-sm text-[#6b7280]">
+            <div className="px-3 py-10 text-center text-body-small-regular text-[var(--text-muted)]">
               No results for "{query}".
             </div>
           ) : (
@@ -173,18 +157,44 @@ function SearchModal({
               <button
                 key={result.href}
                 type="button"
+                title={`View result: ${result.title}`}
                 onClick={() => openResult(index)}
                 onMouseEnter={() => setActiveResultIndex(index)}
                 className={[
                   'flex w-full flex-col gap-1 rounded-xl px-3 py-3 text-left transition-colors',
-                  activeResultIndex === index ? 'bg-[#151515]' : 'hover:bg-[#151515]',
+                  activeResultIndex === index
+                    ? 'bg-[var(--accent-soft)]'
+                    : 'hover:bg-[var(--surface-muted)]',
                 ].join(' ')}
               >
-                <div className="text-xs uppercase tracking-[0.18em] text-[#6b7280]">
+                <div
+                  className={[
+                    'text-xs uppercase tracking-[0.18em]',
+                    activeResultIndex === index
+                      ? 'text-[var(--accent)]'
+                      : 'text-[var(--text-muted)]',
+                  ].join(' ')}
+                >
                   {result.category}
                 </div>
-                <div className="text-base font-semibold text-[#f3f4f6]">{result.title}</div>
-                <div className="text-sm leading-6 text-[#9ca3af]">
+                <div
+                  className={[
+                    'text-base font-semibold',
+                    activeResultIndex === index
+                      ? 'text-[var(--accent-foreground)]'
+                      : 'text-[var(--text)]',
+                  ].join(' ')}
+                >
+                  {result.title}
+                </div>
+                <div
+                  className={[
+                    'text-sm leading-6',
+                    activeResultIndex === index
+                      ? 'text-[var(--accent-foreground)]'
+                      : 'text-[var(--text-muted)]',
+                  ].join(' ')}
+                >
                   {buildSnippet(result, deferredQuery)}
                 </div>
               </button>
@@ -194,6 +204,50 @@ function SearchModal({
       </div>
     </div>
   );
+}
+
+function appendAdminPath(pathname: string): string {
+  if (!pathname || pathname === '/') return '/admin';
+  return pathname;
+}
+
+function getDefaultAdminProtocol(value: string): 'http:' | 'https:' {
+  return /^(localhost|127(?:\.\d+){3})(:\d+)?(?:\/|$)/i.test(value) ? 'http:' : 'https:';
+}
+
+// Accept either a proxied `/admin` path or a CMS host/origin and ensure it lands on `/admin`.
+function normalizeAdminPanelHref(href?: string): string {
+  const value = href?.trim();
+  if (!value) return '/admin';
+
+  if (value.startsWith('#')) {
+    return value;
+  }
+
+  if (value.startsWith('/')) {
+    return appendAdminPath(value);
+  }
+
+  const isProtocolRelative = value.startsWith('//');
+  const hasScheme = /^[a-z][a-z0-9+.-]*:/i.test(value);
+  const resolvedValue = hasScheme
+    ? value
+    : isProtocolRelative
+      ? `https:${value}`
+      : `${getDefaultAdminProtocol(value)}//${value}`;
+
+  try {
+    const url = new URL(resolvedValue);
+    url.pathname = appendAdminPath(url.pathname);
+
+    if (isProtocolRelative) {
+      return `//${url.host}${url.pathname}${url.search}${url.hash}`;
+    }
+
+    return url.toString();
+  } catch {
+    return value;
+  }
 }
 
 export default function NavbarClient({
@@ -212,10 +266,13 @@ export default function NavbarClient({
     nav_links = [],
   } = content;
 
+  const resolvedAdminPanelHref = normalizeAdminPanelHref(admin_panel_href);
   const iconAsset = icon as
     | { _asset?: { url?: string; mime_type?: string }; alt?: string }
     | undefined;
-  const iconUrl = buildAssetUrl(iconAsset?._asset?.url, iconAsset?._asset?.mime_type);
+  const iconUrl = buildAssetUrl(iconAsset?._asset?.url, {
+    mimeType: iconAsset?._asset?.mime_type,
+  });
   const iconAlt = iconAsset?.alt ?? 'logo';
 
   const [activeLink, setActiveLink] = useState(
@@ -265,22 +322,31 @@ export default function NavbarClient({
 
   return (
     <>
-      <nav ref={navRef} className="border-b border-[#1f1f1f] bg-[#0d0d0d] font-sans select-none">
+      <nav
+        ref={navRef}
+        className="border-b border-[var(--border)] bg-[var(--surface)] text-[var(--text)] font-sans select-none"
+      >
         <div className="mx-auto flex min-h-14 w-full max-w-[1600px] flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
-          <a href="/" className="flex min-w-0 shrink items-center gap-2 no-underline">
-            {iconUrl && (
-              <Image
-                src={iconUrl}
-                alt={iconAlt}
-                width={18}
-                height={18}
-                className="object-contain"
-              />
-            )}
-            <span className="truncate text-[15px] font-semibold tracking-tight text-[#f3f4f6]">
-              {logo_text}
-            </span>
-          </a>
+          <div className="flex min-w-0 shrink items-center gap-2">
+            <a href="/" className="flex min-w-0 shrink items-center gap-2 no-underline">
+              {iconUrl && (
+                <Image
+                  src={iconUrl}
+                  alt={iconAlt}
+                  width={18}
+                  height={18}
+                  className="object-contain"
+                />
+              )}
+              <span className="truncate text-[15px] font-semibold tracking-tight text-[var(--text)]">
+                {logo_text}
+              </span>
+            </a>
+            <div className="flex shrink-0 items-center gap-2">
+              <LanguageDropdown />
+              <FrameworkDropdown />
+            </div>
+          </div>
 
           <div className="order-3 w-full md:order-none md:flex md:flex-1 md:justify-center">
             <SearchBar
@@ -294,24 +360,19 @@ export default function NavbarClient({
 
           <div className="ml-auto flex shrink-0 items-center gap-3">
             <a
-              href={admin_panel_href}
-              className="hidden items-center gap-1.5 rounded-full border border-[#2a2a2a] bg-[#141414] px-3 py-1.5 text-sm font-medium text-[#d1d5db] no-underline transition-colors hover:border-[#294132] hover:bg-[#131814] hover:text-[#86efac] sm:inline-flex"
+              href={resolvedAdminPanelHref}
+              className="hidden items-center gap-1.5 rounded-full border border-[var(--border-strong)] bg-[var(--surface-muted)] px-3 py-1.5 text-body-small-regular font-medium text-[var(--text)] no-underline transition-colors hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] sm:inline-flex"
+              title={`Open ${admin_panel_label}`}
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-[#22c55e]/70" />
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]/70" />
               {admin_panel_label}
             </a>
-            <button
-              type="button"
-              aria-label="Toggle theme"
-              className="flex items-center justify-center border-none bg-transparent p-1 text-[#9ca3af] transition-opacity hover:opacity-70"
-            >
-              <MoonIcon className="size-4 cursor-pointer" />
-            </button>
+            <ThemeMenu />
           </div>
         </div>
 
         {nav_links.length > 0 && (
-          <div className="border-t border-[#1a1a1a]">
+          <div className="border-t border-[var(--border)]">
             <div className="mx-auto w-full max-w-[1600px] overflow-x-auto px-4 sm:px-6">
               <div className="flex min-w-max">
                 {nav_links.map((link) => {
@@ -324,10 +385,10 @@ export default function NavbarClient({
                         setActiveLink(link.label);
                       }}
                       className={[
-                        'inline-block whitespace-nowrap px-3.5 py-2.5 text-sm no-underline transition-colors -mb-px',
+                        'inline-block whitespace-nowrap px-3.5 py-2.5 text-body-small-regular no-underline transition-colors -mb-px',
                         isActive
-                          ? 'border-b-2 border-[#22c55e] font-semibold text-[#f3f4f6]'
-                          : 'border-b-2 border-transparent font-normal text-[#6b7280] hover:text-[#d1d5db]',
+                          ? 'border-b-2 border-[var(--accent)] font-semibold text-[var(--text)]'
+                          : 'border-b-2 border-transparent font-normal text-[var(--text-muted)] hover:text-[var(--text)]',
                       ].join(' ')}
                     >
                       {link.label}
