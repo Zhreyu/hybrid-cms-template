@@ -1,10 +1,10 @@
 import type { BlockComponentProps } from 'cms-renderer/lib/types';
 import Image from 'next/image';
-import type { Uifooter } from '@/generated/cms-schemas';
 import { buildAssetUrl } from '@/lib/asset-url';
+import type { FooterBlockContent } from './cms-block-types';
 import { GithubIcon, LinkedInIcon, XIcon } from './icons';
 
-export default async function UIFooter({ content }: BlockComponentProps<Uifooter>) {
+export default async function UIFooter({ content }: BlockComponentProps<FooterBlockContent>) {
   const { powered_by, poweredby_url, x_url, github_url, linkedin_url } = content;
   const statusPageUrl =
     'status_page_url' in content && typeof content.status_page_url === 'string'

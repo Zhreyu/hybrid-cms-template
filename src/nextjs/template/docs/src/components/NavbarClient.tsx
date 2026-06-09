@@ -3,10 +3,10 @@
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import type { Header } from '@/generated/cms-schemas';
 import { buildAssetUrl } from '@/lib/asset-url';
 import type { SearchEntry } from '@/lib/search-index';
 import { buildSnippet, getSearchResults } from '@/lib/search-query';
+import type { HeaderBlockContent } from './cms-block-types';
 import { FrameworkDropdown } from './FrameworkDropdown';
 import { LanguageDropdown } from './LanguageDropdown';
 import { SearchBar } from './SearchBar';
@@ -18,7 +18,7 @@ export interface NavLink {
   active?: boolean;
 }
 
-export type NavbarBlockProps = Omit<Header, 'nav_links'> & {
+export type NavbarBlockProps = Omit<HeaderBlockContent, 'nav_links'> & {
   nav_links?: NavLink[];
 };
 

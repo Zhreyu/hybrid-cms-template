@@ -1,5 +1,4 @@
 import type { BlockComponentProps, Reference, ResolvedRouteParams } from 'cms-renderer/lib/types';
-import type { Header } from '@/generated/cms-schemas';
 import {
   getCategories,
   getCategoryRefs,
@@ -12,11 +11,12 @@ import { getDisplayTitle, getLocalizedDisplayTitle } from '@/lib/display-title';
 import { buildDocsHref } from '@/lib/docs-href';
 import { getRouteSegment } from '@/lib/route-segment';
 import { getSearchEntries } from '@/lib/search-index';
+import type { HeaderBlockContent } from './cms-block-types';
 import NavbarClient, { type NavLink } from './NavbarClient';
 
 type RawNavLinkValue = Record<string, unknown>;
 
-export type NavbarBlockProps = Omit<Header, 'nav_links'> & {
+export type NavbarBlockProps = Omit<HeaderBlockContent, 'nav_links'> & {
   nav_links?: RawNavLinkValue[];
 };
 
