@@ -5,7 +5,11 @@ import { buildAssetUrl } from '@/lib/asset-url';
 import { GithubIcon, LinkedInIcon, XIcon } from './icons';
 
 export default async function UIFooter({ content }: BlockComponentProps<Uifooter>) {
-  const { powered_by, poweredby_url, x_url, github_url, linkedin_url, status_page_url } = content;
+  const { powered_by, poweredby_url, x_url, github_url, linkedin_url } = content;
+  const statusPageUrl =
+    'status_page_url' in content && typeof content.status_page_url === 'string'
+      ? content.status_page_url
+      : undefined;
 
   const poweredByAsset = powered_by as
     | { _asset?: { url?: string; mime_type?: string }; alt?: string }
@@ -38,9 +42,9 @@ export default async function UIFooter({ content }: BlockComponentProps<Uifooter
               {icon}
             </a>
           ))}
-          {status_page_url && (
+          {statusPageUrl && (
             <a
-              href={status_page_url}
+              href={statusPageUrl}
               target="_blank"
               rel="noopener noreferrer"
               title="View status page"
