@@ -17,7 +17,7 @@
     "@tanstack/react-router": "^1.132.0",
     "@tanstack/react-start": "^1.132.0",
     "@tanstack/router-plugin": "^1.132.0",
-    "cms-renderer": "^0.6.6",
+    "cms-renderer": "^0.8.2",
     "lucide-react": "^0.545.0",
     "nitro": "3.0.260429-beta",
     "react": "^19.2.0",

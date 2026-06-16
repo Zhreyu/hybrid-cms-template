@@ -77,7 +77,11 @@ async function CmsCatchAllBody({
   splat?: string
   searchParams: Record<string, string | string[] | undefined>
 }) {
-  const segments = splat ? splat.split('/').filter(Boolean) : []
+  const rawSegments = splat ? splat.split('/').filter(Boolean) : []
+  // CMS edit mode is served at /cms-preview_/<path>. This route is already
+  // request-time dynamic (searchParams flow through to renderParametricRoute),
+  // so we render the same content as <path> by stripping the cms-preview_ prefix.
+  const segments = rawSegments[0] === 'cms-preview_' ? rawSegments.slice(1) : rawSegments
   const result = await renderParametricRouteCached(stableRouteCacheKey(segments, searchParams))
 
   if (result.status === 'not_found') {
