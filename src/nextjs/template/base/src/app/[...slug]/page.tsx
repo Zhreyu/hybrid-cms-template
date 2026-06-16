@@ -1,4 +1,8 @@
 import ParametricRoutePage from "cms-renderer/lib/renderer";
+import { cmsConfig } from "@/lib/cms-config";
+
+// Production route. CMS edit mode is served by /cms-preview_/[...slug] (force-dynamic),
+// which the proxy rewrites to whenever ?edit_mode / ?ai_preview is present.
 
 // Registry maps CMS component types to your React components.
 // Add entries here as you build out your component library.
@@ -6,20 +10,18 @@ const registry = {};
 
 interface PageProps {
   params: Promise<{ slug: string[] }>;
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-export default async function Page({ params, searchParams }: PageProps) {
+export default async function Page({ params }: PageProps) {
   const { slug } = await params;
 
   return (
     <ParametricRoutePage
       registry={registry}
-      apiKey={process.env.PROFOUND_API_KEY ?? ""}
-      websiteId={process.env.NEXT_PUBLIC_PROFOUND_WEBSITE_ID ?? ""}
-      cmsUrl={process.env.NEXT_PUBLIC_CMS_API_URL ?? "https://cms.dev.tryprofound.com"}
+      apiKey={cmsConfig.apiKey ?? ""}
+      websiteId={cmsConfig.websiteId}
+      cmsUrl={cmsConfig.cmsUrl}
       params={Promise.resolve({ slug })}
-      searchParams={searchParams}
     />
   );
 }

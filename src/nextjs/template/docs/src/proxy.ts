@@ -3,7 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cmsConfig } from '@/lib/cms-config';
 
 const upstream = process.env.ADMIN_UPSTREAM_ORIGIN ?? cmsConfig.cmsUrl;
-const cmsProxy = createCmsProxy({ upstream });
+// `additionalPaths: ['/wasm']` forwards the admin panel's .wasm assets, which the
+// prebuilt proxy's STATIC_FILE_REGEX (no `wasm` extension) would otherwise drop.
+const cmsProxy = createCmsProxy({ upstream, additionalPaths: ['/wasm'] });
 const ADMIN_BOOT_PARAM = '__cms_admin_boot';
 const CMS_PROXIED_ADMIN_COOKIE = 'cms_proxied_admin';
 
@@ -230,8 +232,9 @@ export const config = {
     '/admin/:path*',
     '/api/:path*',
     '/auth/:path*',
+    '/wasm/:path*',
     '/_next/:path*',
-    '/((?:.*\\.(?:css|js|map|png|jpg|jpeg|gif|svg|ico|webp|avif|woff|woff2|ttf|eot|txt|xml))$)',
+    '/((?:.*\\.(?:css|js|map|wasm|png|jpg|jpeg|gif|svg|ico|webp|avif|woff|woff2|ttf|eot|txt|xml))$)',
     // Edit mode - match all page routes for ?edit_mode=true detection
     '/((?!_next/static|_next/image|favicon.ico|cms-preview_).*)',
   ],

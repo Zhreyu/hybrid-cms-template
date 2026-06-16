@@ -13,7 +13,7 @@
     "next": "^16.1.1",
     "react": "^19",
     "react-dom": "^19",
-    "cms-renderer": "latest",
+    "cms-renderer": "^0.8.2",
     "zod": "^4.0.0"
   },
   "devDependencies": {
