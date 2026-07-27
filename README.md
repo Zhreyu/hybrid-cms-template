@@ -64,4 +64,4 @@ NEXT_PUBLIC_BUNNY_CDN_URL="https://cms-profound.b-cdn.net"
 bun generate-schemas
 ```
 
-Requires `NEXT_PUBLIC_CMS_API_URL` and `NEXT_PUBLIC_PROFOUND_WEBSITE_ID`. Re-run when you change content models in the CMS.
+Requires `NEXT_PUBLIC_CMS_API_URL` and `NEXT_PUBLIC_PROFOUND_WEBSITE_ID`. Templates ship a committed `src/generated/cms-schemas.ts` so `bun build` works offline / on Vercel without CMS access. Re-run `generate-schemas` (and commit the file) when you change content models in the CMS.

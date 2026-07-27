@@ -4,11 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun run generate-schemas && dotenv -e .env.local -- next dev --turbopack -p 3005",
+    "dev": "dotenv -e .env.local -- next dev --turbopack -p 3005",
     "start": "next start -p 3002",
     "lint": "bunx biome check .",
     "generate-schemas": "dotenv -e .env.local -- bun scripts/generate-schemas.ts",
-    "build": "bun run generate-schemas && dotenv -e .env.local -- next build",
+    "build": "next build",
     "check-types": "tsc --noEmit",
     "clean": "rm -rf .turbo .next node_modules"
   },

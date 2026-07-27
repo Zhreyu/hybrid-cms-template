@@ -24,11 +24,13 @@ PROFOUND_API_KEY=your-api-key
 
 ```bash
 bun run dev
-bun run generate-schemas
 bun run build
+bun run generate-schemas
 ```
 
-`bun run build` now runs through Vite with Nitro enabled, which produces the deployment output Vercel expects.
+`src/generated/cms-schemas.ts` is committed so `bun run build` works on a fresh checkout / Vercel without CMS access. Re-run `bun run generate-schemas` (and commit) when schemas change in the CMS.
+
+`bun run build` runs through Vite with Nitro enabled, which produces the deployment output Vercel expects.
 
 ## Notes
 
