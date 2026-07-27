@@ -7,8 +7,8 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "dev": "bun run generate-schemas && dotenv -e .env.local -- vite dev --port 3005",
-    "build": "bun run generate-schemas && dotenv -e .env.local -- vite build",
+    "dev": "dotenv -e .env.local -- vite dev --port 3005",
+    "build": "vite build",
     "preview": "vite preview --port 3005",
     "lint": "bunx biome check .",
     "generate-schemas": "dotenv -e .env.local -- bun scripts/generate-schemas.ts",
