@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-07-27
+
 ### Fixed
 
 - Commit `src/generated/cms-schemas.ts` in all templates and stop ignoring `/generated`, so fresh scaffolds and Vercel builds work without CMS access at build time. `generate-schemas` remains a manual sync step.
