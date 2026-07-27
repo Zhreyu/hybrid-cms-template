@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Commit `src/generated/cms-schemas.ts` in all templates and stop ignoring `/generated`, so fresh scaffolds and Vercel builds work without CMS access at build time. `generate-schemas` remains a manual sync step.
+
 ## [0.2.0] - 2026-06-02
 
 ### Added

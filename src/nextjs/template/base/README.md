@@ -27,6 +27,8 @@ src/
     [...slug]/      # CMS-backed routes
   components/
     Hello.tsx       # Example component
+  generated/
+    cms-schemas.ts  # Committed Zod schemas (refresh with generate-schemas)
   lib/
     client.ts       # Typed fetch client
     cms-config.ts   # CMS environment config
@@ -34,9 +36,12 @@ src/
 
 ## Scripts
 
-| Command       | Description              |
-| ------------- | ------------------------ |
-| `bun dev`     | Start development server |
-| `bun build`   | Production build         |
-| `bun start`   | Run production server    |
-| `bun lint`    | Lint with ESLint         |
+| Command                | Description                                      |
+| ---------------------- | ------------------------------------------------ |
+| `bun dev`              | Start development server                         |
+| `bun build`            | Production build (no CMS network required)       |
+| `bun start`            | Run production server                            |
+| `bun lint`             | Lint with ESLint                                 |
+| `bun generate-schemas` | Sync Zod schemas from the CMS into `src/generated` |
+
+`src/generated/cms-schemas.ts` is committed so fresh checkouts and Vercel deploys build without calling the CMS. Re-run `bun generate-schemas` (and commit) when content models change.

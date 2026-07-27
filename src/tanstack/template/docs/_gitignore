@@ -35,6 +35,3 @@ pnpm-debug.log*
 
 # typescript
 *.tsbuildinfo
-
-# generated (schemas — re-create with `bun run generate-schemas`)
-/generated

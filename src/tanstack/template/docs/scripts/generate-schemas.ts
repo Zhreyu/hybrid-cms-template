@@ -17,7 +17,7 @@ async function main() {
 
   await saveZodSchemaCode(
     await fetchAllCustomSchemaFields(cmsConfig),
-    './generated/cms-schemas.ts'
+    './src/generated/cms-schemas.ts'
   );
 
   console.log('[generate-schemas] Done.');

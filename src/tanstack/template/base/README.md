@@ -26,7 +26,9 @@ Register custom block components in the empty `registry` in `src/routes/$.tsx` a
 | `bun dev`             | Dev server (port 3000)               |
 | `bun build`           | Production build via Vite + Nitro    |
 | `bun preview`         | Preview production build             |
-| `bun generate-schemas`| Sync Zod schemas from the CMS      |
+| `bun generate-schemas`| Sync Zod schemas from the CMS into `src/generated` |
+
+`src/generated/cms-schemas.ts` is committed so fresh checkouts and Vercel deploys build without calling the CMS. Re-run `bun generate-schemas` (and commit) when content models change.
 
 For deeper docs and guides, see the Profound CMS documentation.
 
