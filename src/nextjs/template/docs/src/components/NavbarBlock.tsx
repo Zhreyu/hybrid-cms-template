@@ -2,14 +2,16 @@ import type { BlockComponentProps, Reference, ResolvedRouteParams } from 'cms-re
 import type { Header } from '@/generated/cms-schemas';
 import {
   getCategories,
-  getCategoryRefs,
+  getCategoryPostRefsMap,
   getCategoryTitleField,
-  getPostsByIds,
+  getOrderingValue,
+  getPostsAndStaticRoutesByIds,
   getSectionsByIds,
   resolveRef,
 } from '@/lib/cms-data';
 import { getDisplayTitle, getLocalizedDisplayTitle } from '@/lib/display-title';
-import { buildDocsHref } from '@/lib/docs-href';
+import { getPostHref } from '@/lib/docs-href';
+import { getRouteCategoryId, getSectionCategoryIds } from '@/lib/docs-sections';
 import { getRouteSegment } from '@/lib/route-segment';
 import { getSearchEntries } from '@/lib/search-index';
 import NavbarClient, { type NavLink } from './NavbarClient';
@@ -55,25 +57,21 @@ function readString(value: unknown): string | null {
 }
 
 function getFirstCategoryPostId(
-  category: Pick<Awaited<ReturnType<typeof getCategories>>[number], 'post' | 'post_list'>
+  category: Awaited<ReturnType<typeof getCategories>>[number],
+  categoryPostRefsById: Map<string, Reference[]>
 ): string | null {
-  const firstPostId = getCategoryRefs(category)[0]?._ref;
+  const firstPostId = categoryPostRefsById.get(String(category._id))?.[0]?._ref;
   return typeof firstPostId === 'string' && firstPostId.length > 0 ? firstPostId : null;
-}
-
-function getSectionCategoryIds(section: { categories_list?: Reference[] }): string[] {
-  return (section.categories_list ?? [])
-    .map((ref) => ref._ref)
-    .filter((id): id is string => typeof id === 'string' && id.length > 0);
 }
 
 function getFirstSectionPostId(
   section: { categories_list?: Reference[] },
-  categoriesById: CategoryMap
+  categoriesById: CategoryMap,
+  categoryPostRefsById: Map<string, Reference[]>
 ): string | null {
   for (const categoryRef of section.categories_list ?? []) {
     const category = resolveRef(categoryRef, categoriesById);
-    const postId = category ? getFirstCategoryPostId(category) : null;
+    const postId = category ? getFirstCategoryPostId(category, categoryPostRefsById) : null;
     if (postId) {
       return postId;
     }
@@ -164,15 +162,13 @@ export default async function NavbarBlock({
   content,
   routeParams,
   language: languageProp,
+  path,
 }: BlockComponentProps<NavbarBlockProps>) {
   const language = languageProp ?? extractLanguage(routeParams);
   const inlineNavLinks = extractInlineNavLinks(content);
   const selectedNavReferences = extractSelectedNavReferences(content);
   const searchEntries = await getSearchEntries(language);
-  const currentCategoryId =
-    routeParams?.category?.document?.id && typeof routeParams.category.document.id === 'string'
-      ? routeParams.category.document.id
-      : null;
+  const routeParamCategoryId = getRouteCategoryId(routeParams);
 
   let resolvedNavLinks: NavLink[] = inlineNavLinks;
 
@@ -188,6 +184,14 @@ export default async function NavbarBlock({
     const translatedCategoriesById = new Map(
       translatedCategories.map((category) => [String(category._id), category])
     );
+    const categoryPostRefsById = await getCategoryPostRefsMap(sourceCategories);
+    const currentCategoryId =
+      routeParamCategoryId ??
+      (path
+        ? ((sourceCategories.find((category) =>
+            categoryPostRefsById.get(String(category._id))?.some((ref) => ref._ref === path)
+          )?._id as string | undefined) ?? null)
+        : null);
 
     const categoryReferences = selectedNavReferences.filter((item) =>
       isCategoryReference(item, sourceCategoriesById)
@@ -209,28 +213,46 @@ export default async function NavbarBlock({
         : Promise.resolve(new Map()),
     ]);
 
-    const firstPostIds = selectedNavReferences
+    const orderedNavReferences = [...selectedNavReferences].sort((left, right) => {
+      const leftCategory = sourceCategoriesById.get(left.id);
+      const rightCategory = sourceCategoriesById.get(right.id);
+      const leftSection = sourceSectionsMap.get(left.id);
+      const rightSection = sourceSectionsMap.get(right.id);
+      const leftOrder = getOrderingValue(leftCategory?.ordering ?? leftSection?.ordering);
+      const rightOrder = getOrderingValue(rightCategory?.ordering ?? rightSection?.ordering);
+      const orderDiff = leftOrder - rightOrder;
+
+      if (orderDiff !== 0) {
+        return orderDiff;
+      }
+
+      return selectedNavReferences.indexOf(left) - selectedNavReferences.indexOf(right);
+    });
+
+    const firstPostIds = orderedNavReferences
       .map((item) => {
         if (categoryReferenceIds.has(item.id)) {
           const category = sourceCategoriesById.get(item.id);
-          return category ? getFirstCategoryPostId(category) : null;
+          return category ? getFirstCategoryPostId(category, categoryPostRefsById) : null;
         }
 
         const section = sourceSectionsMap.get(item.id);
-        return section ? getFirstSectionPostId(section, sourceCategoriesById) : null;
+        return section
+          ? getFirstSectionPostId(section, sourceCategoriesById, categoryPostRefsById)
+          : null;
       })
       .filter((postId): postId is string => postId !== null);
 
-    const sourcePostsMap = await getPostsByIds(firstPostIds);
+    const sourcePostsMap = await getPostsAndStaticRoutesByIds(firstPostIds);
 
-    const maybeNavLinks: Array<NavLink | null> = selectedNavReferences.map((item) => {
+    const maybeNavLinks: Array<NavLink | null> = orderedNavReferences.map((item) => {
       if (categoryReferenceIds.has(item.id)) {
         const sourceCategory = sourceCategoriesById.get(item.id);
         if (!sourceCategory) return null;
 
         const translatedCategory = translatedCategoriesById.get(item.id) ?? sourceCategory;
         const categoryTitleField = getCategoryTitleField(sourceCategory);
-        const firstPostId = getFirstCategoryPostId(sourceCategory);
+        const firstPostId = getFirstCategoryPostId(sourceCategory, categoryPostRefsById);
         if (!firstPostId) return null;
 
         const sourcePost = sourcePostsMap.get(firstPostId);
@@ -242,10 +264,10 @@ export default async function NavbarBlock({
             (language && language !== 'en'
               ? getLocalizedDisplayTitle(sourceCategory, translatedCategory, categoryTitleField)
               : getDisplayTitle(sourceCategory, categoryTitleField)),
-          href: buildDocsHref({
+          href: getPostHref({
+            post: sourcePost,
             language,
             category: getRouteSegment(sourceCategory, categoryTitleField),
-            post: getRouteSegment(sourcePost, 'title'),
           }),
           active: currentCategoryId === item.id,
         };
@@ -263,7 +285,7 @@ export default async function NavbarBlock({
       if (!firstCategory) return null;
 
       const categoryTitleField = getCategoryTitleField(firstCategory);
-      const firstPostId = getFirstCategoryPostId(firstCategory);
+      const firstPostId = getFirstCategoryPostId(firstCategory, categoryPostRefsById);
       if (!firstPostId) return null;
 
       const sourcePost = sourcePostsMap.get(firstPostId);
@@ -275,10 +297,10 @@ export default async function NavbarBlock({
           (language && language !== 'en'
             ? getLocalizedDisplayTitle(sourceSection, translatedSection)
             : getDisplayTitle(sourceSection)),
-        href: buildDocsHref({
+        href: getPostHref({
+          post: sourcePost,
           language,
           category: getRouteSegment(firstCategory, categoryTitleField),
-          post: getRouteSegment(sourcePost, 'title'),
         }),
         active: currentCategoryId !== null && categoryIds.includes(currentCategoryId),
       };

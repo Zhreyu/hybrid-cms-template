@@ -12,10 +12,12 @@ import { THEME_BOOTSTRAP_SCRIPT, ThemeProvider } from '@/lib/theme-provider';
 
 import 'cms-renderer/styles/docs-markdown.css';
 import './globals.css';
+import { DEFAULT_DOCS_DESCRIPTION, getMetadataBase } from '@/lib/docs-metadata';
 
 export const metadata: Metadata = {
-  title: 'documentation',
-  description: 'Built with create-profound-next',
+  metadataBase: getMetadataBase(),
+  title: 'Documentation',
+  description: DEFAULT_DOCS_DESCRIPTION,
 };
 
 async function revalidate() {
@@ -35,14 +37,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <ThemeProvider>
           {children}
-           {cmsConfig.websiteId ? (
-              <Refresher
-                websiteId={cmsConfig.websiteId}
-                cmsUrl={cmsConfig.cmsUrl}
-                apiKey={cmsConfig.apiKey}
-                onInvalidate={revalidate}
-              />
-            ) : null}
+          {cmsConfig.websiteId ? (
+            <Refresher
+              websiteId={cmsConfig.websiteId}
+              cmsUrl={cmsConfig.cmsUrl}
+              apiKey={cmsConfig.apiKey}
+              datasetEndpoint={cmsConfig.datasetEndpoint}
+              onInvalidate={revalidate}
+            />
+          ) : null}
         </ThemeProvider>
         <Analytics />
         <SpeedInsights />

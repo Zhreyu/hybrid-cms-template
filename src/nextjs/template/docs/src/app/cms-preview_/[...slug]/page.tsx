@@ -8,13 +8,19 @@
  * CMS edit mode uses /cms-preview_/[...slug]/page.tsx with force-dynamic.
  */
 
-import ParametricRoutePage from 'cms-renderer/lib/renderer';
+import { ParametricRoutePreviewPage } from 'cms-renderer/lib/renderer';
 import type { BlockComponentRegistry } from 'cms-renderer/lib/types';
+import FAQAccordion from '@/components/FAQAccordion';
 import NavbarBlock from '@/components/NavbarBlock';
 import UIContent from '@/components/UIContent';
+import AeoFeatureSection from '@/components/UIFeature';
 import UIFooter from '@/components/UIFooter';
 import UISidebar from '@/components/UISidebar';
 import { cmsConfig } from '@/lib/cms-config';
+
+// ISR: Revalidate pages every 60 seconds
+export const revalidate = 60;
+export const dynamicParams = true;
 
 // Dynamic rendering - allows searchParams for edit_mode
 export const dynamic = 'force-dynamic';
@@ -28,6 +34,13 @@ const registry: Partial<BlockComponentRegistry> = {
   uicontent: UIContent as any,
   // biome-ignore lint/suspicious/noExplicitAny: block props are CMS-defined at runtime
   uifooter: UIFooter as any,
+  // biome-ignore lint/suspicious/noExplicitAny: block props are CMS-defined at runtime
+  faq_accordion: FAQAccordion as any,
+  'features-block': AeoFeatureSection,
+  featureSection: AeoFeatureSection,
+  feature_section: AeoFeatureSection,
+  clickable_feature_grid: AeoFeatureSection,
+  aeo_feature_block: AeoFeatureSection,
 };
 
 interface PageProps {
@@ -39,7 +52,7 @@ export default async function PreviewPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
 
   return (
-    <ParametricRoutePage
+    <ParametricRoutePreviewPage
       registry={registry}
       apiKey={cmsConfig.apiKey}
       {...(cmsConfig.websiteId ? { websiteId: cmsConfig.websiteId } : {})}

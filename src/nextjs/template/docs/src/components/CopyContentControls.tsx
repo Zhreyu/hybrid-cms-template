@@ -13,11 +13,13 @@ type CopyState = 'idle' | 'copying' | 'copied' | 'error';
 interface CopyContentControlsProps {
   markdown: string;
   contentElementId: string;
+  contentSelector?: string;
 }
 
 export function CopyContentControls({
   markdown,
   contentElementId,
+  contentSelector,
 }: Readonly<CopyContentControlsProps>) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [state, setState] = useState<CopyState>('idle');
@@ -83,8 +85,21 @@ export function CopyContentControls({
 
   const copyRawText = async () => {
     try {
-      const contentNode = document.getElementById(contentElementId);
-      const rawText = (contentNode?.innerText ?? contentNode?.textContent ?? '').trim();
+      const contentNodes = contentSelector
+        ? Array.from(document.querySelectorAll<HTMLElement>(contentSelector))
+        : [];
+      const rawText = (
+        contentNodes.length > 0
+          ? contentNodes
+              .map((node) => node.innerText || node.textContent || '')
+              .join('\n\n')
+              .trim()
+          : (
+              document.getElementById(contentElementId)?.innerText ??
+              document.getElementById(contentElementId)?.textContent ??
+              ''
+            ).trim()
+      ).trim();
       if (!rawText) {
         setState('error');
         scheduleReset();
@@ -116,34 +131,34 @@ export function CopyContentControls({
     {
       key: 'markdown',
       label: 'Markdown',
-      description: 'Copy page as Markdown',
+      description: 'Includes headings, links, and code blocks',
       Icon: CodeBracketIcon,
       onSelect: () => copyByMode('markdown'),
     },
     {
       key: 'raw',
       label: 'Plain Text',
-      description: 'Copy page as Plain Text',
+      description: 'Copies readable text without Markdown syntax',
       Icon: DocumentTextIcon,
       onSelect: () => copyByMode('raw'),
     },
   ] as const;
 
   return (
-    <div className="flex items-center justify-end">
-      <div ref={containerRef} className="relative inline-flex flex-col items-end gap-1.5">
+    <div className="flex items-center">
+      <div ref={containerRef} className="relative inline-flex flex-col items-start gap-1.5">
         <span
           className={[
-            'pointer-events-none absolute left-full top-1/2 ml-2 whitespace-nowrap rounded-md border border-[var(--border)] bg-[var(--surface)]/95 px-2 py-1 text-xs transition-all duration-200 ease-in-out',
+            'pointer-events-none absolute right-0 top-full mt-2 whitespace-nowrap rounded-md border border-[var(--border)] bg-[var(--surface)]/95 px-2 py-1 text-xs transition-all duration-200 ease-in-out sm:left-full sm:right-auto sm:top-1/2 sm:ml-2 sm:mt-0',
             showFeedback
-              ? `-translate-y-1/2 translate-x-0 opacity-100 ${feedbackClass}`
-              : '-translate-y-1/2 translate-x-1 opacity-0',
+              ? `translate-y-0 opacity-100 sm:-translate-y-1/2 ${feedbackClass}`
+              : '-translate-y-1 opacity-0 sm:-translate-y-1/2 sm:translate-x-1',
           ].join(' ')}
         >
           {feedbackText ?? ''}
         </span>
 
-        <div className="inline-flex overflow-hidden rounded-md border border-[var(--accent)] bg-[var(--accent-soft)] text-xs text-[var(--accent-foreground)] transition-colors hover:opacity-90">
+        <div className="inline-flex overflow-hidden rounded-md border-[0.5] border-[var(--accent)] bg-[var(--accent-soft)] text-xs text-[var(--accent-foreground)] transition-colors hover:opacity-90">
           <button
             type="button"
             title="Copy page content to clipboard"
@@ -160,7 +175,7 @@ export function CopyContentControls({
             type="button"
             title="More copy options"
             onClick={() => setMenuOpen((open) => !open)}
-            className="inline-flex cursor-pointer items-center border-l border-[var(--accent)] px-2 transition-colors hover:bg-[var(--surface-muted)] hover:text-[var(--accent)]"
+            className="inline-flex cursor-pointer items-center border-l-[0.5] border-[var(--accent)] px-2 transition-colors hover:bg-[var(--surface-muted)] hover:text-[var(--accent)]"
             aria-expanded={menuOpen}
             aria-haspopup="menu"
             aria-label="Open copy options"
@@ -174,7 +189,10 @@ export function CopyContentControls({
 
         {menuOpen ? (
           <div
-            className="absolute top-full right-0 z-20 mt-1 w-[18rem] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] p-1.5 shadow-lg"
+            className="
+              absolute top-full right-0 z-20 mt-1 w-[min(18rem,calc(100vw-2rem))]
+              overflow-hidden rounded-lg border border-[var(--border)]
+              bg-[var(--surface)] p-1.5 shadow-lg sm:left-0 sm:right-auto sm:w-[18rem]"
             style={{ boxShadow: '0 18px 40px var(--shadow-color)' }}
             role="menu"
             aria-label="Copy options"

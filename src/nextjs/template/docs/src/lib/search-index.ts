@@ -2,9 +2,10 @@ import { unstable_cache } from 'next/cache';
 import { cache } from 'react';
 import {
   getCategories,
-  getCategoryRefs,
+  getCategoryPostRefsMap,
   getCategoryTitleField,
   getPostsByIds,
+  isRouteRefId,
   resolveRef,
 } from './cms-data';
 import { getDisplayTitle, getLocalizedDisplayTitle } from './display-title';
@@ -58,10 +59,12 @@ const getCachedSearchEntries = unstable_cache(
     const translatedById = new Map(
       translatedCategories.map((category) => [String(category._id), category])
     );
+    const categoryPostRefsById = await getCategoryPostRefsMap(sourceCategories);
 
     const allPostIds: string[] = [];
     for (const category of sourceCategories) {
-      for (const ref of getCategoryRefs(category)) {
+      for (const ref of categoryPostRefsById.get(String(category._id)) ?? []) {
+        if (isRouteRefId(ref._ref)) continue;
         allPostIds.push(ref._ref);
       }
     }
@@ -84,7 +87,9 @@ const getCachedSearchEntries = unstable_cache(
         : getDisplayTitle(sourceCategory, categoryTitleField);
       const categorySlug = getRouteSegment(sourceCategory, categoryTitleField);
 
-      for (const ref of getCategoryRefs(sourceCategory)) {
+      for (const ref of categoryPostRefsById.get(String(sourceCategory._id)) ?? []) {
+        if (isRouteRefId(ref._ref)) continue;
+
         const sourcePost = resolveRef(ref, sourcePostsMap);
         if (!sourcePost) continue;
 
