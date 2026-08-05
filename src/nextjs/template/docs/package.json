@@ -16,7 +16,7 @@
     "@heroicons/react": "^2.2.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
-    "cms-renderer": "^0.8.2",
+    "cms-renderer": "^0.9.7",
     "md4w": "^0.2.7",
     "next": "16.2.6",
     "react": "^19.2.3",

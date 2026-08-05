@@ -22,7 +22,9 @@ import {
 
 function setLanguageCookie(languageCode: string) {
   if (typeof document === 'undefined') return;
+
   const maxAge = 60 * 60 * 24 * 180;
+
   // biome-ignore lint/suspicious/noDocumentCookie: server-readable selection for root redirect
   document.cookie = `${DOCS_LANGUAGE_COOKIE_KEY}=${encodeURIComponent(
     languageCode
@@ -31,27 +33,37 @@ function setLanguageCookie(languageCode: string) {
 
 function getLanguageFromPathname(pathname: string): string {
   const firstSegment = pathname.split('/').filter(Boolean)[0];
+
   if (firstSegment && isSupportedLanguageCode(firstSegment)) {
     return firstSegment;
   }
+
   return DEFAULT_LANGUAGE_CODE;
 }
 
 function buildPathWithLanguage(pathname: string, languageCode: string): string {
   const segments = pathname.split('/').filter(Boolean);
+
   if (segments.length > 0 && isSupportedLanguageCode(segments[0])) {
     segments[0] = languageCode;
   } else {
     segments.unshift(languageCode);
   }
+
   return `/${segments.join('/')}`;
 }
 
-export function LanguageDropdown() {
+export function LanguageDropdown({
+  showLanguageDropdown = false,
+}: {
+  showLanguageDropdown?: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const menuId = useId();
+
   const [open, setOpen] = useState(false);
+
   const containerRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const firstItemRef = useRef<HTMLButtonElement | null>(null);
@@ -64,6 +76,7 @@ export function LanguageDropdown() {
       code: DEFAULT_LANGUAGE_CODE,
       name: 'English',
       nativeName: 'English',
+      flag: '🇺🇸',
     };
 
   const displayLabel = current.nativeName || current.name;
@@ -88,6 +101,7 @@ export function LanguageDropdown() {
 
     const onPointerDown = (event: PointerEvent) => {
       const el = containerRef.current;
+
       if (!el || !(event.target instanceof Node)) return;
       if (!el.contains(event.target)) setOpen(false);
     };
@@ -110,6 +124,7 @@ export function LanguageDropdown() {
     const items = Array.from(
       currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')
     );
+
     items[nextIndex]?.focus();
   };
 
@@ -117,6 +132,7 @@ export function LanguageDropdown() {
     const items = Array.from(
       event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')
     );
+
     const currentIndex =
       document.activeElement instanceof HTMLButtonElement
         ? items.indexOf(document.activeElement)
@@ -150,6 +166,7 @@ export function LanguageDropdown() {
       } catch {
         // ignore quota / private mode
       }
+
       setLanguageCookie(code);
       setOpen(false);
 
@@ -161,10 +178,13 @@ export function LanguageDropdown() {
       const nextPath = buildPathWithLanguage(pathname, code);
       const search = typeof window !== 'undefined' ? window.location.search : '';
       const hash = typeof window !== 'undefined' ? window.location.hash : '';
+
       router.push(`${nextPath}${search}${hash}`);
     },
     [pathname, router]
   );
+
+  if (!showLanguageDropdown) return null;
 
   return (
     <div ref={containerRef} className="relative shrink-0">
@@ -176,10 +196,27 @@ export function LanguageDropdown() {
         aria-expanded={open}
         aria-controls={`${menuId}-menu`}
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[var(--border-strong)] bg-[var(--surface-muted)] px-3 py-1.5 text-body-small-regular font-medium text-[var(--text)] transition-colors hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)]"
+        className={[
+          'inline-flex cursor-pointer items-center gap-2 rounded-full',
+          'px-3 py-1.5 text-sm font-medium',
+          'text-[var(--text)] transition-colors',
+          'hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)]',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]',
+        ].join(' ')}
       >
+        <span aria-hidden="true" className="text-sm leading-none">
+          {current.flag}
+        </span>
+
         <span className="max-w-[7rem] truncate sm:max-w-none">{displayLabel}</span>
-        <ChevronDownIcon aria-hidden={true} className="size-4 shrink-0 text-[var(--text-muted)]" />
+
+        <ChevronDownIcon
+          aria-hidden={true}
+          className={[
+            'size-3.5 shrink-0 text-[var(--text-muted)] transition-transform',
+            open ? 'rotate-180' : '',
+          ].join(' ')}
+        />
       </button>
 
       {open ? (
@@ -188,13 +225,17 @@ export function LanguageDropdown() {
           role="menu"
           aria-labelledby={`${menuId}-trigger`}
           onKeyDown={onMenuKeyDown}
-          className="absolute left-0 z-[70] mt-2 max-h-[min(24rem,70vh)] min-w-[11rem] cursor-pointer overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--surface)] py-1 shadow-xl sm:left-auto sm:right-0"
+          className={[
+            'absolute right-0 z-[100] min-w-[11.75rem]',
+            'bottom-full mb-2',
+            'sm:translate-x-6',
+            'max-h-[22rem] overflow-y-auto',
+            'rounded-2xl border border-[var(--border)] bg-[var(--surface)]',
+            'p-1.5 shadow-2xl shadow-black/40',
+          ].join(' ')}
         >
           {SUPPORTED_LANGUAGES.map((language, index) => {
-            const subtitle =
-              language.nativeName && language.nativeName !== language.name
-                ? language.name
-                : undefined;
+            const selected = language.code === selectedCode;
 
             return (
               <button
@@ -202,20 +243,21 @@ export function LanguageDropdown() {
                 ref={index === 0 ? firstItemRef : undefined}
                 type="button"
                 role="menuitem"
+                aria-current={selected ? 'true' : undefined}
                 className={[
-                  'flex w-full cursor-pointer flex-col items-start gap-0.5 px-3 py-2 text-left text-sm outline-none transition-colors focus-visible:bg-[var(--accent-soft)] focus-visible:text-[var(--accent-foreground)]',
-                  language.code === selectedCode
+                  'flex w-full cursor-pointer items-center gap-3 rounded-xl',
+                  'px-3 py-2 text-left text-sm outline-none transition-colors',
+                  selected
                     ? 'bg-[var(--accent-soft)] text-[var(--accent-foreground)]'
                     : 'text-[var(--text)] hover:bg-[var(--surface-muted)]',
                 ].join(' ')}
                 onClick={() => selectLanguage(language.code)}
               >
-                <span className="font-medium">{language.nativeName || language.name}</span>
-                {subtitle ? (
-                  <span className="text-[11px] font-normal text-[var(--text-muted)]">
-                    {subtitle}
-                  </span>
-                ) : null}
+                <span aria-hidden="true" className="w-5 shrink-0 text-base leading-none">
+                  {language.flag}
+                </span>
+
+                <span className="truncate font-medium">{language.nativeName || language.name}</span>
               </button>
             );
           })}

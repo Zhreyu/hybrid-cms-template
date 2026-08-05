@@ -1,14 +1,20 @@
 import {
+  type Categories,
   getCategories,
-  getCategoryRefs,
+  getCategoryPostRefsMap,
   getCategoryTitleField,
   getPostsByIds,
+  getSections,
+  isRouteRefId,
+  type Section,
 } from '@/lib/cms-data';
+import { buildDocsHref } from '@/lib/docs-href';
+import { resolveSectionCategories } from '@/lib/docs-sections';
 import { getRouteSegment } from '@/lib/route-segment';
 
-export const FALLBACK_DOCS_ENTRY = {
-  category: 'headless',
-  post: 'quickstart',
+const FALLBACK_DOCS_ENTRY = {
+  category: 'general',
+  post: 'intro',
 };
 
 function logFallbackDocsEntry(reason: string, details?: Record<string, unknown>) {
@@ -19,47 +25,75 @@ function logFallbackDocsEntry(reason: string, details?: Record<string, unknown>)
   });
 }
 
-/** First available documentation entry (category and post) for default landing redirects. */
-export async function getDefaultDocsEntry(): Promise<{ category: string; post: string }> {
-  const categories = await getCategories();
-  const firstCategory = categories.find((category) => getCategoryRefs(category).length > 0);
+function getFallbackDocsHref(language?: string): string {
+  return buildDocsHref({ language, ...FALLBACK_DOCS_ENTRY });
+}
 
-  if (!firstCategory) {
-    logFallbackDocsEntry('missing category with posts');
-    return FALLBACK_DOCS_ENTRY;
+async function getFirstNavigableCategories(
+  sourceCategories: Categories[],
+  sourceSections: Section[]
+) {
+  const categoriesById = new Map(
+    sourceCategories.map((category) => [String(category._id), category])
+  );
+  const categoryPostRefsById = await getCategoryPostRefsMap(sourceCategories);
+  const firstSectionCategories =
+    sourceSections
+      .map((section) => resolveSectionCategories(section, categoriesById))
+      .find((categories) =>
+        categories.some(
+          (category) => (categoryPostRefsById.get(String(category._id)) ?? []).length > 0
+        )
+      ) ?? [];
+
+  return firstSectionCategories.length > 0 ? firstSectionCategories : sourceCategories;
+}
+
+async function getFirstHrefFromCategories(
+  categories: Categories[],
+  language?: string
+): Promise<string | null> {
+  const categoryPostRefsById = await getCategoryPostRefsMap(categories);
+
+  for (const category of categories) {
+    const categoryTitleField = getCategoryTitleField(category);
+    const categorySlug = getRouteSegment(category, categoryTitleField);
+    if (!categorySlug) continue;
+
+    for (const ref of categoryPostRefsById.get(String(category._id)) ?? []) {
+      const refId = ref._ref;
+      if (!refId) continue;
+
+      if (isRouteRefId(refId)) continue;
+
+      const postsMap = await getPostsByIds([refId]);
+      const post = postsMap.get(refId);
+      if (!post) continue;
+
+      const postSlug = getRouteSegment(post, 'title');
+      if (!postSlug) continue;
+
+      return buildDocsHref({
+        language,
+        category: categorySlug,
+        post: postSlug,
+      });
+    }
   }
 
-  const categoryTitleField = getCategoryTitleField(firstCategory);
-  const firstPostId = getCategoryRefs(firstCategory)[0]?._ref;
-  if (!firstPostId) {
-    logFallbackDocsEntry('missing first post reference', {
-      categoryId: String(firstCategory._id ?? ''),
-    });
-    return FALLBACK_DOCS_ENTRY;
+  return null;
+}
+
+/** First available documentation href for default landing redirects. */
+export async function getDefaultDocsEntry(language?: string): Promise<{ href: string }> {
+  const [sourceCategories, sourceSections] = await Promise.all([getCategories(), getSections()]);
+  const orderedCategories = await getFirstNavigableCategories(sourceCategories, sourceSections);
+  const href = await getFirstHrefFromCategories(orderedCategories, language);
+
+  if (href) {
+    return { href };
   }
 
-  const postsMap = await getPostsByIds([firstPostId]);
-  const firstPost = postsMap.get(firstPostId);
-
-  if (!firstPost) {
-    logFallbackDocsEntry('missing first post document', { firstPostId });
-    return FALLBACK_DOCS_ENTRY;
-  }
-
-  const category = getRouteSegment(firstCategory, categoryTitleField);
-  const post = getRouteSegment(firstPost, 'title');
-  if (!category || !post) {
-    logFallbackDocsEntry('missing route segment', {
-      categoryId: String(firstCategory._id ?? ''),
-      firstPostId,
-      category,
-      post,
-    });
-    return FALLBACK_DOCS_ENTRY;
-  }
-
-  return {
-    category,
-    post,
-  };
+  logFallbackDocsEntry('missing navigable static route or post document');
+  return { href: getFallbackDocsHref(language) };
 }

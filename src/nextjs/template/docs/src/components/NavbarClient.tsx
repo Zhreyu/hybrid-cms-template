@@ -1,14 +1,17 @@
 'use client';
 
-import Image from 'next/image';
+import {
+  ChevronDownIcon,
+  EllipsisVerticalIcon,
+  MagnifyingGlassIcon,
+  XMarkIcon,
+} from '@heroicons/react/16/solid';
 import { useRouter } from 'next/navigation';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import type { Header } from '@/generated/cms-schemas';
-import { buildAssetUrl } from '@/lib/asset-url';
 import type { SearchEntry } from '@/lib/search-index';
 import { buildSnippet, getSearchResults } from '@/lib/search-query';
-import { FrameworkDropdown } from './FrameworkDropdown';
-import { LanguageDropdown } from './LanguageDropdown';
+import { BrandLogo, type BrandLogoData, resolveBrandLogo } from './BrandLogo';
 import { SearchBar } from './SearchBar';
 import { ThemeMenu } from './ThemeMenu';
 
@@ -18,9 +21,32 @@ export interface NavLink {
   active?: boolean;
 }
 
-export type NavbarBlockProps = Omit<Header, 'nav_links'> & {
+declare global {
+  interface Window {
+    __docsBrandLogo?: BrandLogoData;
+  }
+}
+
+export type NavbarClientBlockProps = Omit<Header, 'nav_links'> & {
   nav_links?: NavLink[];
+  [key: string]: unknown;
 };
+
+function readTrimmedString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+}
+
+function readHrefValue(value: unknown): string | null {
+  const directValue = readTrimmedString(value);
+  if (directValue) return directValue;
+
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  return readTrimmedString(record.href) ?? readTrimmedString(record.url);
+}
 
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -171,7 +197,7 @@ function SearchModal({
                   className={[
                     'text-xs uppercase tracking-[0.18em]',
                     activeResultIndex === index
-                      ? 'text-[var(--accent)]'
+                      ? 'bg-[var(--accent-soft)] font-medium text-[var(--text)]'
                       : 'text-[var(--text-muted)]',
                   ].join(' ')}
                 >
@@ -206,6 +232,66 @@ function SearchModal({
   );
 }
 
+function MobileActionModal({
+  open,
+  label,
+  href,
+  onClose,
+}: {
+  open: boolean;
+  label: string;
+  href: string;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    if (!open) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[85] bg-[var(--overlay)] backdrop-blur-sm md:hidden">
+      <button
+        type="button"
+        aria-label="Close menu"
+        className="absolute inset-0"
+        onClick={onClose}
+      />
+      <div className="absolute right-2 top-2 flex h-19 w-[min(64vw,16rem)] items-center justify-between rounded-md bg-[var(--surface)] px-8 shadow-2xl">
+        <a
+          href={href}
+          className="text-sm text-[var(--text-muted)] no-underline transition-colors hover:text-[var(--text)] tracking-[0.02em]"
+        >
+          {label}
+        </a>
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex size-6 cursor-pointer items-center justify-center rounded-full text-[var(--text)] transition-colors hover:bg-[var(--surface-muted)]"
+          aria-label="Close menu"
+          title="Close menu"
+        >
+          <XMarkIcon aria-hidden={true} className="size-6" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function appendAdminPath(pathname: string): string {
   if (!pathname || pathname === '/') return '/admin';
   return pathname;
@@ -217,10 +303,10 @@ function getDefaultAdminProtocol(value: string): 'http:' | 'https:' {
 
 // Accept either a proxied `/admin` path or a CMS host/origin and ensure it lands on `/admin`.
 function normalizeAdminPanelHref(href?: string): string {
-  const value = href?.trim();
+  const value = readHrefValue(href);
   if (!value) return '/admin';
 
-  if (value.startsWith('#')) {
+  if (value.startsWith('#') || value.startsWith('mailto')) {
     return value;
   }
 
@@ -250,36 +336,263 @@ function normalizeAdminPanelHref(href?: string): string {
   }
 }
 
+function capitalizeLabel(value: unknown): string {
+  const label = readTrimmedString(value) ?? 'Admin Panel';
+
+  return label
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+const SECTION_LINK_CLASS =
+  'inline-flex max-w-40 shrink-0 items-center truncate px-0 py-4 text-sm no-underline transition-colors -mb-px sm:max-w-56';
+
+function getSectionLinkClass(isActive: boolean): string {
+  return [
+    SECTION_LINK_CLASS,
+    isActive
+      ? 'border-b border-[var(--text)] font-semibold text-[var(--text)]'
+      : 'border-b border-transparent font-normal text-[var(--text-muted)] hover:text-[var(--text)]',
+  ].join(' ');
+}
+
+function SectionNavigation({
+  links,
+  activeLink,
+  onActiveLinkChange,
+}: {
+  links: NavLink[];
+  activeLink?: string;
+  onActiveLinkChange: (label: string) => void;
+}) {
+  const [visibleCount, setVisibleCount] = useState(links.length);
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const moreRef = useRef<HTMLButtonElement | null>(null);
+  const itemRefs = useRef<Array<HTMLSpanElement | null>>([]);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  const measure = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const containerWidth = container.clientWidth;
+    if (containerWidth <= 0) return;
+
+    const itemWidths = links.map((_, index) => itemRefs.current[index]?.offsetWidth ?? 0);
+    const moreWidth = moreRef.current?.offsetWidth ?? 88;
+    const gap = 8;
+
+    let nextVisibleCount = 0;
+    let usedWidth = 0;
+
+    for (let index = 0; index < itemWidths.length; index++) {
+      const width = itemWidths[index] ?? 0;
+      const nextWidth = usedWidth + width + (nextVisibleCount > 0 ? gap : 0);
+      const reserveMoreWidth = index < itemWidths.length - 1 ? moreWidth + gap : 0;
+
+      if (nextWidth + reserveMoreWidth > containerWidth) {
+        break;
+      }
+
+      usedWidth = nextWidth;
+      nextVisibleCount += 1;
+    }
+
+    setVisibleCount(Math.max(1, nextVisibleCount));
+  }, [links]);
+
+  useEffect(() => {
+    measure();
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(container);
+    window.addEventListener('resize', measure);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [measure]);
+
+  useEffect(() => {
+    if (!isMoreOpen) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      const menu = menuRef.current;
+      if (!menu || !(event.target instanceof Node)) return;
+      if (!menu.contains(event.target)) setIsMoreOpen(false);
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMoreOpen(false);
+      }
+    };
+
+    window.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isMoreOpen]);
+
+  const activeIndex = links.findIndex((link) => link.label === activeLink);
+  const visibleIndexes = new Set(links.slice(0, visibleCount).map((_, index) => index));
+
+  if (activeIndex >= visibleCount && activeIndex >= 0) {
+    visibleIndexes.delete(Math.max(0, visibleCount - 1));
+    visibleIndexes.add(activeIndex);
+  }
+
+  const visibleLinks = links.filter((_, index) => visibleIndexes.has(index));
+  const overflowLinks = links.filter((_, index) => !visibleIndexes.has(index));
+
+  return (
+    <div ref={containerRef} className="relative min-w-0">
+      <div className="pointer-events-none absolute left-0 top-0 -z-10 flex h-0 gap-2 overflow-hidden opacity-0">
+        {links.map((link, index) => (
+          <span
+            key={link.label}
+            ref={(element) => {
+              itemRefs.current[index] = element;
+            }}
+            className={getSectionLinkClass(link.label === activeLink)}
+          >
+            {link.label}
+          </span>
+        ))}
+        <button
+          ref={moreRef}
+          type="button"
+          className="inline-flex shrink-0 items-center gap-1.5 px-3.5 py-2.5 text-body-small-regular font-medium text-[var(--text-muted)]"
+          tabIndex={-1}
+          aria-hidden={true}
+        >
+          More
+          <ChevronDownIcon aria-hidden={true} className="size-3.5" />
+        </button>
+      </div>
+
+      <div className="flex min-w-0 items-end gap-6 overflow-visible">
+        {visibleLinks.map((link) => {
+          const isActive = activeLink === link.label;
+          return (
+            <a
+              key={link.label}
+              href={link.href}
+              onClick={() => {
+                onActiveLinkChange(link.label);
+                setIsMoreOpen(false);
+              }}
+              className={getSectionLinkClass(isActive)}
+              title={link.label}
+            >
+              {link.label}
+            </a>
+          );
+        })}
+
+        {overflowLinks.length > 0 ? (
+          <div ref={menuRef} className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsMoreOpen((open) => !open)}
+              className={[
+                'inline-flex cursor-pointer items-center gap-1.5 px-3.5 py-2.5 text-body-small-regular font-medium',
+                'border-b-2 border-transparent text-[var(--text-muted)] transition-colors hover:text-[var(--text)]',
+              ].join(' ')}
+              aria-haspopup="menu"
+              aria-expanded={isMoreOpen}
+              title="More sections"
+            >
+              More
+              <ChevronDownIcon
+                aria-hidden={true}
+                className={['size-3.5 transition-transform', isMoreOpen ? 'rotate-180' : ''].join(
+                  ' '
+                )}
+              />
+            </button>
+
+            {isMoreOpen ? (
+              <div
+                role="menu"
+                className="absolute right-0 z-[70] mt-2 w-56 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] p-1 shadow-2xl shadow-black/30"
+              >
+                {overflowLinks.map((link) => {
+                  const isActive = activeLink === link.label;
+                  return (
+                    <a
+                      key={link.label}
+                      href={link.href}
+                      role="menuitem"
+                      onClick={() => {
+                        onActiveLinkChange(link.label);
+                        setIsMoreOpen(false);
+                      }}
+                      className={[
+                        'block truncate rounded-md px-3 py-2 text-sm no-underline transition-colors',
+                        isActive
+                          ? 'bg-[var(--accent-soft)] font-medium text-[var(--accent-foreground)]'
+                          : 'text-[var(--text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--text)]',
+                      ].join(' ')}
+                      title={link.label}
+                    >
+                      {link.label}
+                    </a>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export default function NavbarClient({
   content,
   searchEntries,
 }: {
-  content: NavbarBlockProps;
+  content: NavbarClientBlockProps;
   searchEntries: SearchEntry[];
 }) {
   const {
-    icon,
-    logo_text = 'Profound',
     admin_panel_label = 'Admin Panel',
-    admin_panel_href = '/admin',
+    admin_panel_href,
     search_placeholder = 'Search...',
     nav_links = [],
   } = content;
 
   const resolvedAdminPanelHref = normalizeAdminPanelHref(admin_panel_href);
-  const iconAsset = icon as
-    | { _asset?: { url?: string; mime_type?: string }; alt?: string }
-    | undefined;
-  const iconUrl = buildAssetUrl(iconAsset?._asset?.url, {
-    mimeType: iconAsset?._asset?.mime_type,
-  });
-  const iconAlt = iconAsset?.alt ?? 'logo';
+  const adminPanelLabel = capitalizeLabel(admin_panel_label);
+  const brandLogo = useMemo(() => resolveBrandLogo(content), [content]);
 
-  const [activeLink, setActiveLink] = useState(
-    nav_links.find((l) => l.active)?.label ?? nav_links[0]?.label
+  const resolvedActiveLink = useMemo(
+    () => nav_links.find((link) => link.active)?.label ?? nav_links[0]?.label,
+    [nav_links]
   );
+  const [activeLink, setActiveLink] = useState(resolvedActiveLink);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isMobileActionOpen, setIsMobileActionOpen] = useState(false);
   const navRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setActiveLink(resolvedActiveLink);
+  }, [resolvedActiveLink]);
+
+  useEffect(() => {
+    window.__docsBrandLogo = brandLogo;
+    window.dispatchEvent(new CustomEvent('docs-brand-logo-change', { detail: brandLogo }));
+  }, [brandLogo]);
 
   useEffect(() => {
     const element = navRef.current;
@@ -322,80 +635,70 @@ export default function NavbarClient({
 
   return (
     <>
-      <nav
-        ref={navRef}
-        className="border-b border-[var(--border)] bg-[var(--surface)] text-[var(--text)] font-sans select-none"
-      >
-        <div className="mx-auto flex min-h-14 w-full max-w-[1600px] flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
+      <nav ref={navRef} className="bg-[var(--surface)] font-sans text-[var(--text)] select-none">
+        <div className="mx-auto flex min-h-16 w-full max-w-[1392px] items-center gap-3 px-5 py-3 sm:px-6">
           <div className="flex min-w-0 shrink items-center gap-2">
-            <a href="/" className="flex min-w-0 shrink items-center gap-2 no-underline">
-              {iconUrl && (
-                <Image
-                  src={iconUrl}
-                  alt={iconAlt}
-                  width={18}
-                  height={18}
-                  className="object-contain"
-                />
-              )}
-              <span className="truncate text-[15px] font-semibold tracking-tight text-[var(--text)]">
-                {logo_text}
-              </span>
-            </a>
-            <div className="flex shrink-0 items-center gap-2">
-              <LanguageDropdown />
-              <FrameworkDropdown />
-            </div>
+            <BrandLogo brand={brandLogo} />
           </div>
 
-          <div className="order-3 w-full md:order-none md:flex md:flex-1 md:justify-center">
+          <div className="hidden md:flex md:flex-1 md:justify-center">
             <SearchBar
               placeholder={search_placeholder}
               readOnly
               onFocus={() => setIsSearchOpen(true)}
               onClick={() => setIsSearchOpen(true)}
-              className="mx-auto max-w-[22rem] sm:max-w-[26rem] md:max-w-[480px]"
+              className="mx-auto max-w-[22rem] sm:max-w-[26rem] md:max-w-[300px] lg:max-w-[300px]"
             />
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-3">
+          <div className="ml-auto hidden shrink-0 items-center gap-4 md:flex">
             <a
               href={resolvedAdminPanelHref}
-              className="hidden items-center gap-1.5 rounded-full border border-[var(--border-strong)] bg-[var(--surface-muted)] px-3 py-1.5 text-body-small-regular font-medium text-[var(--text)] no-underline transition-colors hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] sm:inline-flex"
-              title={`Open ${admin_panel_label}`}
+              className={[
+                'inline-flex cursor-pointer items-center',
+                'text-sm font-medium',
+                'text-[var(--text)] transition-colors hover:text-black',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-strong)]',
+              ].join(' ')}
+              title={`Open ${adminPanelLabel}`}
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]/70" />
-              {admin_panel_label}
+              {adminPanelLabel}
             </a>
-            <ThemeMenu />
+            <div className="hidden sm:block">
+              <ThemeMenu />
+            </div>
+          </div>
+
+          <div className="ml-auto flex shrink-0 items-center gap-3 md:hidden">
+            <button
+              type="button"
+              onClick={() => setIsSearchOpen(true)}
+              className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-muted)] hover:text-[var(--text)]"
+              aria-label="Search docs"
+              title="Search docs"
+            >
+              <MagnifyingGlassIcon aria-hidden={true} className="size-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsMobileActionOpen(true)}
+              className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-muted)] hover:text-[var(--text)]"
+              aria-label="Open menu"
+              title="Open menu"
+            >
+              <EllipsisVerticalIcon aria-hidden={true} className="size-5" />
+            </button>
           </div>
         </div>
 
         {nav_links.length > 0 && (
-          <div className="border-t border-[var(--border)]">
-            <div className="mx-auto w-full max-w-[1600px] overflow-x-auto px-4 sm:px-6">
-              <div className="flex min-w-max">
-                {nav_links.map((link) => {
-                  const isActive = activeLink === link.label;
-                  return (
-                    <a
-                      key={link.label}
-                      href={link.href}
-                      onClick={() => {
-                        setActiveLink(link.label);
-                      }}
-                      className={[
-                        'inline-block whitespace-nowrap px-3.5 py-2.5 text-body-small-regular no-underline transition-colors -mb-px',
-                        isActive
-                          ? 'border-b-2 border-[var(--accent)] font-semibold text-[var(--text)]'
-                          : 'border-b-2 border-transparent font-normal text-[var(--text-muted)] hover:text-[var(--text)]',
-                      ].join(' ')}
-                    >
-                      {link.label}
-                    </a>
-                  );
-                })}
-              </div>
+          <div className="hidden border-y-[0.5] border-[var(--border)] md:block">
+            <div className="mx-auto w-full max-w-[1392px] px-4 sm:px-6">
+              <SectionNavigation
+                links={nav_links}
+                activeLink={activeLink}
+                onActiveLinkChange={setActiveLink}
+              />
             </div>
           </div>
         )}
@@ -405,6 +708,12 @@ export default function NavbarClient({
         open={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
         entries={searchEntries}
+      />
+      <MobileActionModal
+        open={isMobileActionOpen}
+        label={adminPanelLabel}
+        href={resolvedAdminPanelHref}
+        onClose={() => setIsMobileActionOpen(false)}
       />
     </>
   );

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-04
+
+### Changed
+
+- Updated the next.js docs template to use the latest design.
+
 ## [0.2.2] - 2026-07-27
 
 ### Fixed
@@ -119,7 +125,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial README documentation.
 - A base template `.env.example`.
 
-[0.2.0]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/6620db3...HEAD
+[0.3.0]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/47d8018...HEAD
+[0.2.2]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/dccf834...47d8018
+[0.2.0]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/6620db3...dccf834
 [0.1.7]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/4bde1ad...6620db3
 [0.1.6]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/bc74c63...4bde1ad
 [0.1.5]: https://github.com/eng-manager-xyz/hybrid-cms-template/compare/c1c80fc...bc74c63
