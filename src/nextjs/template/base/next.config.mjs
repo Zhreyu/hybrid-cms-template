@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // md4w resolves its WASM asset relative to its installed package path on the server.
+  serverExternalPackages: ['md4w'],
   async headers() {
     return [
       {
